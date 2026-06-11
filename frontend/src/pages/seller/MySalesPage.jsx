@@ -168,7 +168,7 @@ const MySalesPage = () => {
                         <td className="px-4 py-3 font-mono text-sm">#{order.id}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <img src={order.product_image || "https://placehold.co/40x40"} className="w-8 h-8 object-cover rounded" />
+                            <img src={order.product_image || "https://placehold.co/40x40"} className="w-8 h-8 object-cover rounded" alt="" />
                             <span>{order.product_name}</span>
                           </div>
                         </td>
