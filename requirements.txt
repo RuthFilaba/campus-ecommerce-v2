@@ -1,0 +1,25 @@
+# Core
+Django==5.2
+djangorestframework==3.15.2
+djangorestframework-simplejwt==5.3.1
+django-cors-headers==4.4.0
+django-filter==24.3
+
+# Database & Cache
+redis==5.2.1
+
+# Real-time
+channels==4.2.0
+channels-redis==4.2.1
+daphne==4.1.2
+
+# Image Processing
+Pillow==12.2.0
+
+# Utilities
+python-dotenv==1.0.1
+PyJWT==2.12.1
+cryptography==48.0.0
+
+# ASGI
+uvicorn==0.47.0

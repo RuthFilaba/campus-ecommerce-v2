@@ -1,0 +1,67 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background: #f9f9f9; }
+        .order-details { background: white; padding: 15px; margin: 15px 0; border-radius: 5px; }
+        .status { display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: bold; }
+        .status-pending { background: #ffc107; color: #333; }
+        .status-processing { background: #17a2b8; color: white; }
+        .status-ready { background: #007bff; color: white; }
+        .status-completed { background: #28a745; color: white; }
+        .status-cancelled { background: #dc3545; color: white; }
+        .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
+        .button { display: inline-block; padding: 10px 20px; background: #4CAF50; color: white; text-decoration: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Campus E-Commerce</h1>
+            <p>Order Status Update</p>
+        </div>
+        <div class="content">
+            <h2>Hello {{ buyer_name }},</h2>
+            <p>Your order <strong>#{{ order_id }}</strong> status has been updated to:</p>
+            
+            <div style="text-align: center; margin: 20px 0;">
+                <span class="status status-{{ status }}">
+                    {{ status_display }}
+                </span>
+            </div>
+            
+            <div class="order-details">
+                <h3>Order Details:</h3>
+                <p><strong>Product:</strong> {{ product_name }}</p>
+                <p><strong>Quantity:</strong> {{ quantity }}</p>
+                <p><strong>Total Amount:</strong> K{{ total_price }}</p>
+                <p><strong>Order Date:</strong> {{ created_at }}</p>
+            </div>
+            
+            {% if meetup_location %}
+            <div class="order-details">
+                <h3>Meetup Information:</h3>
+                <p><strong>Location:</strong> {{ meetup_location }}</p>
+                {% if meetup_time %}
+                <p><strong>Time:</strong> {{ meetup_time }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <p>You can track your order status anytime by visiting your dashboard.</p>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <a href="{{ site_url }}/api/orders/{{ order_id }}/" class="button">View Order</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Campus E-Commerce - Safe Trading on Campus</p>
+            <p>This is an automated message, please do not reply.</p>
+        </div>
+    </div>
+</body>
+</html>

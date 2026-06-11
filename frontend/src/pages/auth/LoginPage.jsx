@@ -1,0 +1,156 @@
+import { useState } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Link, useNavigate, useLocation } from "react-router-dom"
+import { motion } from "framer-motion"
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { faEnvelope, faLock, faArrowRight } from "@fortawesome/free-solid-svg-icons"
+import { useAuth } from "../../contexts/AuthContext"
+import FormInput from "../../components/ui/FormInput"
+import AnimatedButton from "../../components/ui/AnimatedButton"
+import { loginSchema } from "../../utils/validators"
+
+const LoginPage = () => {
+  const { login } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [isLoading, setIsLoading] = useState(false)
+  
+  const from = location.state?.from?.pathname || "/dashboard"
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+  })
+
+  const onSubmit = async (data) => {
+    setIsLoading(true)
+    const success = await login(data.email, data.password)
+    setIsLoading(false)
+    
+    if (success) {
+      navigate(from, { replace: true })
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-md w-full space-y-8"
+      >
+        {/* Header */}
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 bg-amber-500 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-xl">C</span>
+          </div>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white">
+            Welcome Back
+          </h2>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Sign in to your CampusEcom account
+          </p>
+        </div>
+
+        {/* Form */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+          className="bg-white dark:bg-gray-800 py-8 px-6 shadow-xl rounded-xl"
+        >
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <FormInput
+              label="Email Address"
+              type="email"
+              placeholder="you@example.com"
+              icon={faEnvelope}
+              required
+              error={errors.email?.message}
+              {...register("email")}
+            />
+
+            <FormInput
+              label="Password"
+              type="password"
+              placeholder="••••••••"
+              icon={faLock}
+              required
+              error={errors.password?.message}
+              {...register("password")}
+            />
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 text-amber-500 focus:ring-amber-500 border-gray-300 rounded"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+                  Remember me
+                </label>
+              </div>
+
+              <div className="text-sm">
+                <a href="#" className="font-medium text-amber-600 hover:text-amber-500">
+                  Forgot password?
+                </a>
+              </div>
+            </div>
+
+            <AnimatedButton
+              type="submit"
+              fullWidth
+              loading={isLoading}
+            >
+              Sign In
+              <FontAwesomeIcon icon={faArrowRight} className="ml-2" />
+            </AnimatedButton>
+          </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">
+                  New to CampusEcom?
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <Link
+                to="/register"
+                className="w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Create New Account
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Demo Credentials */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="text-center text-xs text-gray-500 dark:text-gray-400"
+        >
+          <p>Demo Credentials:</p>
+          <p>Email: demo@campusecom.zm | Password: demo123</p>
+        </motion.div>
+      </motion.div>
+    </div>
+  )
+}
+
+export default LoginPage

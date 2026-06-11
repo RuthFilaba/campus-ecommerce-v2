@@ -1,0 +1,52 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background: #f9f9f9; }
+        .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
+        .button { display: inline-block; padding: 10px 20px; background: #4CAF50; color: white; text-decoration: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to Campus E-Commerce!</h1>
+        </div>
+        <div class="content">
+            <h2>Hello {{ user_name }},</h2>
+            <p>Thank you for joining Campus E-Commerce! We're excited to have you on board.</p>
+            
+            <p>As a {{ role }} on our platform, you can:</p>
+            <ul>
+                {% if role == 'buyer' %}
+                <li>Browse and purchase products from fellow students</li>
+                <li>Chat with sellers directly</li>
+                <li>Track your orders in real-time</li>
+                <li>Leave reviews for sellers</li>
+                {% elif role == 'seller' %}
+                <li>List your items for sale</li>
+                <li>Manage your inventory</li>
+                <li>Communicate with buyers</li>
+                <li>Track your sales and earnings</li>
+                {% else %}
+                <li>Manage the marketplace</li>
+                <li>Approve products</li>
+                <li>Monitor platform analytics</li>
+                {% endif %}
+            </ul>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <a href="{{ site_url }}/api/products/" class="button">Start Shopping</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Campus E-Commerce - Safe Trading on Campus</p>
+            <p>© 2026 Campus E-Commerce. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
