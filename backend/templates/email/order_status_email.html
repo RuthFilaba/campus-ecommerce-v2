@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Status Update - Campus E-Commerce</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            background: #f9f9f9;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .status-pending { background: #ffc107; color: #856404; }
+        .status-processing { background: #17a2b8; color: white; }
+        .status-ready { background: #28a745; color: white; }
+        .status-completed { background: #28a745; color: white; }
+        .status-cancelled { background: #dc3545; color: white; }
+        .order-details {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #e0e0e0;
+        }
+        .order-details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .order-details td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .order-details td:first-child {
+            font-weight: bold;
+            width: 40%;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: #999;
+        }
+        .meetup-info {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏫 Campus E-Commerce</h1>
+            <p>Order Status Update</p>
+        </div>
+        <div class="content">
+            <h2>Hello {{ buyer_name }}!</h2>
+            <p>Your order <strong>#{{ order.id }}</strong> status has been updated.</p>
+            
+            <div class="status-badge status-{{ new_status }}">
+                <strong>Status: {{ new_status|title }}</strong>
+            </div>
+            
+            <div class="order-details">
+                <h3>Order Details:</h3>
+                <table>
+                    <tr>
+                        <td>Order ID:</td>
+                        <td><strong>#{{ order.id }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Product:</td>
+                        <td><strong>{{ product_name }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Quantity:</td>
+                        <td><strong>{{ quantity }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Total Price:</td>
+                        <td><strong>K{{ total_price }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Order Date:</td>
+                        <td>{{ order.created_at|date:"F j, Y, g:i a" }}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            {% if meetup_location %}
+            <div class="meetup-info">
+                <h3>📍 Meetup Information</h3>
+                <p><strong>Location:</strong> {{ meetup_location }}</p>
+                {% if meetup_time %}
+                <p><strong>Time:</strong> {{ meetup_time|date:"F j, Y, g:i a" }}</p>
+                {% endif %}
+                {% if meetup_notes %}
+                <p><strong>Notes:</strong> {{ meetup_notes }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <a href="http://localhost:8000/orders/{{ order.id }}/" class="button">View Order Details</a>
+            
+            {% if new_status == 'completed' %}
+            <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <h3>⭐ Enjoyed your experience?</h3>
+                <p>Please leave a review for the seller to help build trust in our community!</p>
+            </div>
+            {% endif %}
+            
+            {% if new_status == 'cancelled' %}
+            <div style="background: #f8d7da; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <h3>❌ Order Cancelled</h3>
+                <p>If you have any questions, please contact support.</p>
+            </div>
+            {% endif %}
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 Campus E-Commerce. All rights reserved.</p>
+            <p>This is an automated message, please do not reply.</p>
+        </div>
+    </div>
+</body>
+</html>
