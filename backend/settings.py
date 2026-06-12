@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'reviews',
     'coupons',
     'wishlist',
+    'analytics',
 ]
 
 MIDDLEWARE = [
@@ -113,7 +114,6 @@ CHANNEL_LAYERS = {
 
 # Production settings
 import os
-import dj_database_url
 
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 

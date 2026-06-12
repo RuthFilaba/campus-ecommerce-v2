@@ -1,8 +1,8 @@
 from django.urls import path
-from .views import SellerDashboardView, SalesReportView, AdminDashboardView
+from .views import seller_dashboard, sales_report, admin_dashboard
 
 urlpatterns = [
-    path('seller-dashboard/', SellerDashboardView.as_view(), name='seller-dashboard'),
-    path('sales-report/', SalesReportView.as_view(), name='sales-report'),
-    path('admin-dashboard/', AdminDashboardView.as_view(), name='admin-dashboard'),
+    path('seller-dashboard/', seller_dashboard, name='seller-dashboard'),
+    path('sales-report/', sales_report, name='sales-report'),
+    path('admin-dashboard/', admin_dashboard, name='admin-dashboard'),
 ]
