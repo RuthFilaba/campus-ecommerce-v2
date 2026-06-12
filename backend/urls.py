@@ -13,16 +13,13 @@ def api_root(request):
         'message': 'Welcome to Campus E-Commerce API',
         'version': '1.0.0',
         'endpoints': {
-            'Authentication': {
-                'register': '/api/users/register/',
-                'login': '/api/users/login/',
-                'profile': '/api/users/me/',
-            },
-            'Products': {
-                'list': '/api/products/',
-                'create': '/api/products/create/ (sellers only)',
-                'detail': '/api/products/{id}/',
-            },
+            'Authentication': '/api/users/',
+            'Products': '/api/products/',
+            'Cart': '/api/cart/',
+            'Orders': '/api/orders/',
+            'Payments': '/api/payments/',
+            'Chat': '/api/chat/',
+            'Analytics': '/api/analytics/',
             'Admin': '/admin/',
         }
     })
@@ -32,14 +29,13 @@ urlpatterns = [
     path('api/', api_root, name='api-root'),
     path('api/users/', include('users.urls')),
     path('api/products/', include('products.urls')),
-    path('api/cart/', include('cart.urls')),
     path('api/orders/', include('orders.urls')),
+    path('api/cart/', include('cart.urls')),
     path('api/payments/', include('payments.urls')),
-    # path('api/chat/', include('chat.urls')),  # Temporarily disabled
+    path('api/chat/', include('chat.urls')),
     path('api/analytics/', include('analytics.urls')),
-    path('api/reviews/', include('reviews.urls')),
-    path('api/wishlist/', include('wishlist.urls')),
-    path('api/coupons/', include('coupons.urls')),
+    # path('api/reviews/', include('reviews.urls')),  # Commented out - not implemented yet
 ]
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

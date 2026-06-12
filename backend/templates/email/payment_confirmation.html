@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Confirmation - Campus E-Commerce</title>
+</head>
+<body>
+    <h1>Payment Confirmation</h1>
+    <p>Hello {{ buyer_name }},</p>
+    <p>Your payment for Order #{{ order.id }} has been confirmed.</p>
+    <p><strong>Amount:</strong> K{{ amount }}</p>
+    <p><strong>Payment Method:</strong> {{ payment_method }}</p>
+    <p><strong>Transaction Reference:</strong> {{ transaction_reference }}</p>
+    <p>Thank you for shopping with Campus E-Commerce!</p>
+    <p>Best regards,<br>Campus E-Commerce Team</p>
+</body>
+</html>

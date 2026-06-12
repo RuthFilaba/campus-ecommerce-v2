@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Order Status Update - Campus E-Commerce</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #667eea; color: white; padding: 20px; text-align: center; }
+        .content { background: #f9f9f9; padding: 20px; }
+        .status { display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: bold; }
+        .status-processing { background: #17a2b8; color: white; }
+        .status-completed { background: #28a745; color: white; }
+        .status-cancelled { background: #dc3545; color: white; }
+        .status-pending { background: #ffc107; color: #856404; }
+        .status-ready { background: #28a745; color: white; }
+        .footer { text-align: center; padding: 20px; font-size: 12px; color: #999; }
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: 8px; border-bottom: 1px solid #ddd; }
+        td:first-child { font-weight: bold; width: 40%; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏫 Campus E-Commerce</h1>
+            <p>Order Status Update</p>
+        </div>
+        <div class="content">
+            <h2>Hello {{ buyer_name }}!</h2>
+            <p>Your order <strong>#{{ order.id }}</strong> status has been updated.</p>
+            
+            <div class="status status-{{ new_status }}">
+                <strong>Status: {{ new_status|title }}</strong>
+            </div>
+            
+            <h3>Order Details:</h3>
+            <table>
+                <tr>
+                    <td>Order ID:</td>
+                    <td><strong>#{{ order.id }}</strong></td>
+                </tr>
+                <tr>
+                    <td>Product:</td>
+                    <td><strong>{{ product_name }}</strong></td>
+                </tr>
+                <tr>
+                    <td>Quantity:</td>
+                    <td><strong>{{ quantity }}</strong></td>
+                </tr>
+                <tr>
+                    <td>Total Price:</td>
+                    <td><strong>K{{ total_price }}</strong></td>
+                </tr>
+                <tr>
+                    <td>Order Date:</td>
+                    <td>{{ order.created_at }}</td>
+                </tr>
+            </table>
+            
+            {% if meetup_location %}
+            <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <h3>📍 Meetup Information</h3>
+                <p><strong>Location:</strong> {{ meetup_location }}</p>
+                {% if meetup_time %}
+                <p><strong>Time:</strong> {{ meetup_time }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <hr>
+            <p style="font-size: 12px; color: #999;">This is an automated message. Please do not reply.</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 Campus E-Commerce. Safe campus trading.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -6,7 +6,6 @@ from django.utils import timezone
 from orders.models import Order
 from .models import Payment
 from .serializers import PaymentSerializer, CreatePaymentSerializer
-from backend.email_service import send_payment_confirmation_email
 
 class CreatePaymentView(APIView):
     """

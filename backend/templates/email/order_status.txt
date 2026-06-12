@@ -1,0 +1,24 @@
+Campus E-Commerce - Order Status Update
+========================================
+
+Hello {{ buyer_name }}!
+
+Your order #{{ order.id }} status has been updated to: {{ new_status|upper }}
+
+Order Details:
+-------------
+Order ID: #{{ order.id }}
+Product: {{ product_name }}
+Quantity: {{ quantity }}
+Total Price: K{{ total_price }}
+Order Date: {{ order.created_at }}
+
+{% if meetup_location %}
+Meetup Information:
+------------------
+Location: {{ meetup_location }}
+{% if meetup_time %}Time: {{ meetup_time }}{% endif %}
+{% endif %}
+
+---
+Campus E-Commerce - Safe Campus Trading
