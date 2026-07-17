@@ -6,20 +6,20 @@ import os
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
-from channels.security.websocket import AllowedHostsOriginValidator
+from django.urls import path
+from apps.chat import consumers
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'campus_config.settings')
 
-django_asgi_app = get_asgi_application()
-
-# Import routing after Django setup to avoid circular imports
-from chat.routing import websocket_urlpatterns
+# WebSocket URL patterns
+websocket_urlpatterns = [
+    path('ws/chat/<int:thread_id>/', consumers.ChatConsumer.as_asgi()),
+    path('ws/chat/online/', consumers.OnlineStatusConsumer.as_asgi()),
+]
 
 application = ProtocolTypeRouter({
-    "http": django_asgi_app,
-    "websocket": AllowedHostsOriginValidator(
-        AuthMiddlewareStack(
-            URLRouter(websocket_urlpatterns)
-        )
+    'http': get_asgi_application(),
+    'websocket': AuthMiddlewareStack(
+        URLRouter(websocket_urlpatterns)
     ),
 })

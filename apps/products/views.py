@@ -92,7 +92,7 @@ class ProductCreateView(generics.CreateAPIView):
     permission_classes = [IsSellerOrAdmin]
     
     def perform_create(self, serializer):
-        serializer.save(seller=self.request.user, is_submitted=True)
+        return serializer.save(seller=self.request.user, is_submitted=True)
     
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -219,3 +219,69 @@ class RejectProductView(APIView):
             })
         except Product.DoesNotExist:
             return Response({'error': 'Product not found'}, status=404)
+
+# ──────────────────────────────────────────────
+# Seller Dashboard
+# ──────────────────────────────────────────────
+
+class SellerDashboardView(APIView):
+    """
+    Dashboard for authenticated sellers.
+    Returns stats, recent orders, and low-stock alerts.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user
+        
+        if user.role not in ['seller', 'admin']:
+            return Response({
+                'stats': {
+                    'revenue': 0,
+                    'orders': 0,
+                    'products': 0,
+                    'customers': 0,
+                    'new_orders': 0,
+                    'messages': 0,
+                    'payouts': 0,
+                    'notifications': 0,
+                },
+                'recent_orders': [],
+                'low_stock': [],
+            })
+        
+        if user.role == 'admin':
+            products = Product.objects.filter(is_active=True)
+        else:
+            products = Product.objects.filter(seller=user, is_active=True)
+        
+        total_products = products.count()
+        low_stock_products = products.filter(stock__lte=3)
+        
+        stats = {
+            'revenue': 0,
+            'orders': 0,
+            'products': total_products,
+            'customers': 0,
+            'new_orders': 0,
+            'messages': 0,
+            'payouts': 0,
+            'notifications': 0,
+        }
+        
+        recent_orders = []
+        
+        low_stock = [
+            {
+                'id': p.id,
+                'name': p.name,
+                'stock': p.stock,
+            }
+            for p in low_stock_products[:5]
+        ]
+        
+        return Response({
+            'stats': stats,
+            'recent_orders': recent_orders,
+            'low_stock': low_stock,
+        })

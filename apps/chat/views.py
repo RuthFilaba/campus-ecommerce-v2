@@ -126,20 +126,39 @@ class SendMessageView(APIView):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class MarkThreadReadView(APIView):
+# Add at the end of chat/views.py
+
+class MarkMessageReadView(APIView):
+    """Mark a single message as read"""
     permission_classes = [permissions.IsAuthenticated]
     
-    def post(self, request, thread_id):
+    def post(self, request, message_id):
+        try:
+            message = Message.objects.get(id=message_id)
+            if message.receiver == request.user and not message.is_read:
+                message.is_read = True
+                message.read_at = timezone.now()
+                message.save()
+                return Response({'success': True, 'message': 'Marked as read'})
+        except Message.DoesNotExist:
+            pass
+        return Response({'error': 'Message not found'}, status=404)
+
+class ThreadOnlineStatusView(APIView):
+    """Get online status of users in a thread"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request, thread_id):
         thread = get_object_or_404(ChatThread, id=thread_id)
         
         if thread.buyer != request.user and thread.seller != request.user:
-            return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'error': 'Not authorized'}, status=403)
         
-        thread.mark_as_read(request.user)
-        
+        # This would be populated by WebSocket connections
+        # For now, return placeholder
         return Response({
-            'success': True,
-            'message': 'Messages marked as read'
+            'buyer_online': False,
+            'seller_online': False,
         })
 
 class UnreadCountView(APIView):

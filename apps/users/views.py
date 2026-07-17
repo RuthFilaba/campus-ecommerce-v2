@@ -2,10 +2,12 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.utils import timezone
-from django.shortcuts import get_object_or_404
+from django.db.models import Q
 from .models import User
-from .serializers import RegisterSerializer, UserSerializer, ChangePasswordSerializer, UpdateProfileSerializer
+from .serializers import (
+    RegisterSerializer, UserSerializer, UpdateProfileSerializer,
+    ChangePasswordSerializer, AdminUserUpdateSerializer, UserListSerializer
+)
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -18,7 +20,6 @@ class RegisterView(generics.CreateAPIView):
         user = serializer.save()
         
         refresh = RefreshToken.for_user(user)
-        user.reset_failed_logins()
         
         return Response({
             'success': True,
@@ -38,21 +39,20 @@ class LoginView(APIView):
         password = request.data.get('password')
         
         if not email or not password:
-            return Response({
-                'error': 'Email and password are required'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Email and password required'}, status=400)
         
         try:
             user = User.objects.get(email=email)
             
             if user.is_locked():
-                remaining = user.get_remaining_lockout_minutes()
+                remaining = (user.locked_until - timezone.now()).seconds // 60
                 return Response({
                     'error': f'Account locked. Try again in {remaining} minutes.'
-                }, status=status.HTTP_401_UNAUTHORIZED)
+                }, status=401)
             
             if user.check_password(password):
                 user.reset_failed_logins()
+                user.update_last_active()
                 
                 refresh = RefreshToken.for_user(user)
                 
@@ -67,16 +67,13 @@ class LoginView(APIView):
                 })
             else:
                 user.increment_failed_logins()
-                remaining_attempts = 5 - user.failed_login_attempts
-                
+                remaining = 5 - user.failed_login_attempts
                 return Response({
-                    'error': f'Invalid credentials. {remaining_attempts} attempts remaining.'
-                }, status=status.HTTP_401_UNAUTHORIZED)
+                    'error': f'Invalid credentials. {remaining} attempts remaining.'
+                }, status=401)
                 
         except User.DoesNotExist:
-            return Response({
-                'error': 'Invalid credentials'
-            }, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'Invalid credentials'}, status=401)
 
 class UserMeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -96,7 +93,7 @@ class UserMeView(APIView):
                 'message': 'Profile updated successfully',
                 'user': UserSerializer(request.user).data
             })
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=400)
 
 class ChangePasswordView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -107,9 +104,7 @@ class ChangePasswordView(APIView):
             user = request.user
             
             if not user.check_password(serializer.validated_data['old_password']):
-                return Response({
-                    'error': 'Current password is incorrect'
-                }, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': 'Current password is incorrect'}, status=400)
             
             user.set_password(serializer.validated_data['new_password'])
             user.last_password_change = timezone.now()
@@ -117,29 +112,9 @@ class ChangePasswordView(APIView):
             
             return Response({
                 'success': True,
-                'message': 'Password changed successfully. Please login again.'
+                'message': 'Password changed successfully'
             })
-        
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class LogoutView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def post(self, request):
-        try:
-            refresh_token = request.data.get('refresh')
-            if refresh_token:
-                token = RefreshToken(refresh_token)
-                token.blacklist()
-            
-            return Response({
-                'success': True,
-                'message': 'Logged out successfully'
-            })
-        except Exception:
-            return Response({
-                'error': 'Invalid token'
-            }, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=400)
 
 class UserStatsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -152,169 +127,110 @@ class UserStatsView(APIView):
             'total_sales': user.total_sales,
             'average_rating': float(user.rating),
             'review_count': user.review_count,
+            'trust_score': user.trust_score,
             'member_since': user.created_at,
-            'is_verified_seller': user.is_campus_verified and user.role == 'seller'
-        })
-
-class SellerVerificationStatusView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def get(self, request):
-        user = request.user
-        
-        if user.role != 'seller':
-            return Response({'error': 'Only sellers can access verification status'}, status=403)
-        
-        badge_display = {
-            'basic': 'Basic Member',
-            'campus': 'Campus Verified',
-            'verified': 'Verified Seller',
-            'premium': 'Premium Seller'
-        }.get(user.verification_level, 'Basic Member')
-        
-        badge_icon = {
-            'basic': '🟢',
-            'campus': '🏫',
-            'verified': '✅',
-            'premium': '⭐'
-        }.get(user.verification_level, '🟢')
-        
-        return Response({
-            'success': True,
-            'verification': {
-                'verification_level': user.verification_level,
-                'is_verified_seller': user.is_verified_seller,
-                'badge_display': badge_display,
-                'badge_icon': badge_icon,
+            'last_active': user.last_active,
+            'verification_status': {
+                'email': user.is_verified,
+                'campus': user.is_campus_verified,
+                'phone': user.is_phone_verified,
             },
-            'stats': {
-                'total_reviews': user.review_count,
-                'average_rating': float(user.rating),
-                'total_sales': user.total_sales,
-            },
-            'requirements': []
-        })
-
-class RequestVerificationView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def post(self, request):
-        user = request.user
-        
-        if user.role != 'seller':
-            return Response({'error': 'Only sellers can request verification'}, status=403)
-        
-        user.verification_requested_at = timezone.now()
-        user.verification_notes = request.data.get('notes', '')
-        user.save()
-        
-        return Response({
-            'success': True,
-            'message': 'Verification request submitted. Admin will review your application.',
-            'requested_at': user.verification_requested_at
-        })
-
-class SellerBadgeView(APIView):
-    permission_classes = [permissions.AllowAny]
-    
-    def get(self, request, seller_id):
-        seller = get_object_or_404(User, id=seller_id, role='seller')
-        
-        badge_display = {
-            'basic': 'Basic Member',
-            'campus': 'Campus Verified',
-            'verified': 'Verified Seller',
-            'premium': 'Premium Seller'
-        }.get(seller.verification_level, 'Basic Member')
-        
-        badge_icon = {
-            'basic': '🟢',
-            'campus': '🏫',
-            'verified': '✅',
-            'premium': '⭐'
-        }.get(seller.verification_level, '🟢')
-        
-        return Response({
-            'seller_id': seller.id,
-            'seller_name': seller.get_full_name(),
-            'badge': {
-                'verification_level': seller.verification_level,
-                'badge_display': badge_display,
-                'badge_icon': badge_icon,
-            },
-            'stats': {
-                'total_reviews': seller.review_count,
-                'average_rating': float(seller.rating),
-                'total_sales': seller.total_sales,
+            'role_info': {
+                'name': user.get_role_display(),
+                'badge': user.get_role_badge(),
+                'can_sell': user.can_sell(),
+                'can_buy': user.can_buy(),
             }
         })
 
-class AdminVerificationListView(APIView):
+class AllUsersView(generics.ListAPIView):
+    """Admin view to list all users with filters"""
+    serializer_class = UserListSerializer
     permission_classes = [permissions.IsAdminUser]
     
-    def get(self, request):
-        pending_sellers = User.objects.filter(
-            role='seller',
-            verification_level='basic',
-            verification_requested_at__isnull=False
-        )
+    def get_queryset(self):
+        queryset = User.objects.all()
         
-        data = []
-        for seller in pending_sellers:
-            data.append({
-                'id': seller.id,
-                'email': seller.email,
-                'name': seller.get_full_name(),
-                'requested_at': seller.verification_requested_at,
-                'notes': seller.verification_notes,
-                'stats': {
-                    'sales': seller.total_sales,
-                    'reviews': seller.review_count,
-                    'rating': float(seller.rating),
-                }
-            })
+        # Filter by role
+        role = self.request.query_params.get('role')
+        if role:
+            queryset = queryset.filter(role=role)
         
-        return Response({'pending_requests': data})
+        # Filter by verification status
+        verified = self.request.query_params.get('verified')
+        if verified == 'true':
+            queryset = queryset.filter(is_verified=True)
+        elif verified == 'false':
+            queryset = queryset.filter(is_verified=False)
+        
+        # Search by email or name
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(email__icontains=search) |
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search)
+            )
+        
+        return queryset.order_by('-created_at')
 
-class AdminApproveVerificationView(APIView):
+class UserDetailView(APIView):
+    """Admin view to get, update, or delete a specific user"""
     permission_classes = [permissions.IsAdminUser]
     
-    def post(self, request, seller_id):
-        seller = get_object_or_404(User, id=seller_id, role='seller')
-        
-        verification_level = request.data.get('verification_level', 'campus')
-        notes = request.data.get('notes', '')
-        
-        seller.verification_level = verification_level
-        seller.is_verified_seller = verification_level in ['campus', 'verified', 'premium']
-        seller.verified_at = timezone.now()
-        seller.verification_notes = notes
-        seller.save()
-        
-        return Response({
-            'success': True,
-            'message': f'Seller {seller.email} verified as {verification_level} level',
-            'verification_level': verification_level
-        })
-
-class TopSellersView(APIView):
-    permission_classes = [permissions.AllowAny]
+    def get(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+            return Response(UserSerializer(user).data)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=404)
     
-    def get(self, request):
-        top_sellers = User.objects.filter(
-            role='seller',
-            is_verified_seller=True
-        ).order_by('-rating', '-total_sales')[:10]
-        
-        data = []
-        for seller in top_sellers:
-            data.append({
-                'id': seller.id,
-                'name': seller.get_full_name(),
-                'rating': float(seller.rating),
-                'total_sales': seller.total_sales,
-                'review_count': seller.review_count,
-                'verification_level': seller.verification_level,
+    def patch(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+            serializer = AdminUserUpdateSerializer(user, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    'success': True,
+                    'message': f'User {user.email} updated successfully',
+                    'user': UserSerializer(user).data
+                })
+            return Response(serializer.errors, status=400)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=404)
+    
+    def delete(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+            email = user.email
+            user.delete()
+            return Response({
+                'success': True,
+                'message': f'User {email} deleted successfully'
             })
-        
-        return Response({'top_sellers': data})
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=404)
+
+class UpdateUserRoleView(APIView):
+    """Admin view to update user role"""
+    permission_classes = [permissions.IsAdminUser]
+    
+    def patch(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+            new_role = request.data.get('role')
+            
+            if new_role not in ['buyer', 'seller', 'admin', 'moderator', 'support']:
+                return Response({'error': 'Invalid role'}, status=400)
+            
+            user.role = new_role
+            user.save()
+            
+            return Response({
+                'success': True,
+                'message': f'User {user.email} role changed to {new_role}',
+                'user': UserSerializer(user).data
+            })
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=404)
