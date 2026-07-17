@@ -23,13 +23,13 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework_simplejwt',
     'django_filters',
-    'users',
-    'products',
-    'cart',
-    'orders',
-    'payments',
-    'chat',
-    'analytics',
+    'apps.users',
+    'apps.products',
+    'apps.cart',
+    'apps.orders',
+    'apps.payments',
+    'apps.chat',
+    'apps.analytics',
     'channels',
     # 'reviews',  # Remove or comment out
 ]
@@ -104,7 +104,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Custom user model
-AUTH_USER_MODEL = 'apps.users.User'
+AUTH_USER_MODEL = 'users.User'
 
 # REST Framework settings
 REST_FRAMEWORK = {

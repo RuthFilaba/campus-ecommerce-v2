@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import ChatThread, Message
-from products.serializers import ProductSerializer
-from users.serializers import UserSerializer
+from apps.products.serializers import ProductSerializer
+from apps.users.serializers import UserSerializer
 
 class MessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.SerializerMethodField()

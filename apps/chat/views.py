@@ -8,7 +8,7 @@ from .serializers import (
     ChatThreadSerializer, MessageSerializer, 
     CreateThreadSerializer, SendMessageSerializer
 )
-from products.models import Product
+from apps.products.models import Product
 
 class MyChatsView(generics.ListAPIView):
     serializer_class = ChatThreadSerializer
