@@ -296,11 +296,11 @@ const SellerDashboardPage = () => {
                 <p className="text-sm font-medium">View Sales</p>
               </Link>
               <Link
-                to="/orders"
-                className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-center hover:bg-purple-100 transition-colors"
+                to={`/profile/${user?.id}`}
+                className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-center hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors"
               >
-                <FontAwesomeIcon icon={faTruck} className="text-purple-500 text-xl mb-2" />
-                <p className="text-sm font-medium">Track Orders</p>
+                <FontAwesomeIcon icon={faEye} className="text-purple-500 text-xl mb-2" />
+                <p className="text-sm font-medium">View My Store</p>
               </Link>
             </div>
             
@@ -308,10 +308,10 @@ const SellerDashboardPage = () => {
             <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <h3 className="font-semibold text-sm mb-2">?? Seller Tips</h3>
               <ul className="text-xs text-gray-600 space-y-1">
-                <li>• Respond to orders quickly to build trust</li>
-                <li>• Keep your stock levels updated</li>
-                <li>• Add clear product images and descriptions</li>
-                <li>• Communicate meetup details clearly</li>
+                <li>ï¿½ Respond to orders quickly to build trust</li>
+                <li>ï¿½ Keep your stock levels updated</li>
+                <li>ï¿½ Add clear product images and descriptions</li>
+                <li>ï¿½ Communicate meetup details clearly</li>
               </ul>
             </div>
           </div>
