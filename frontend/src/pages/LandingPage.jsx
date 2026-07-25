@@ -17,9 +17,11 @@ import {
   faQuoteLeft,
   faGraduationCap,
   faHandshake,
-  faChartLine
+  faChartLine,
+  faSpinner
 } from "@fortawesome/free-solid-svg-icons"
 import api from "../services/api"
+import Navbar from "../components/Navbar"
 
 const LandingPage = () => {
   const [featuredProducts, setFeaturedProducts] = useState([])
@@ -34,12 +36,14 @@ const LandingPage = () => {
 
   const fetchFeaturedProducts = async () => {
     try {
-      const response = await api.get('/products/featured/')
+      const response = await api.get('/products/')
       let products = []
       if (response.data.results) {
         products = response.data.results
       } else if (Array.isArray(response.data)) {
         products = response.data
+      } else {
+        products = response.data.results || response.data.data || []
       }
       setFeaturedProducts(products.slice(0, 4))
     } catch (error) {
@@ -49,11 +53,33 @@ const LandingPage = () => {
     }
   }
 
+  // Get primary image - matches backend get_images_list() priority
+  const getPrimaryImage = (product) => {
+    if (product.image_1) return product.image_1
+    if (product.image_2) return product.image_2
+    if (product.image_3) return product.image_3
+    if (product.image_url) return product.image_url
+    return null
+  }
+
+  // Category mapping matching backend
+  const getCategoryDisplay = (category) => {
+    const categoryMap = {
+      'food': 'Food & Drinks',
+      'academic': 'Academic',
+      'fashion': 'Fashion',
+      'tech-mobile': 'Tech & Mobile',
+      'events': 'Events & Tickets',
+      'marketplace': 'Marketplace'
+    }
+    return categoryMap[category] || category || 'General'
+  }
+
   const categories = [
-    { name: "Electronics", icon: "faLaptop", image: "https://images.pexels.com/photos/18105/pexels-photo.jpg?w=600", description: "Laptops, phones & accessories" },
-    { name: "Fashion", icon: "faShirt", image: "https://images.pexels.com/photos/298863/pexels-photo-298863.jpeg?w=600", description: "Clothing, shoes & style" },
-    { name: "Books", icon: "faBook", image: "https://images.pexels.com/photos/159866/books-book-pages-read-literature-159866.jpeg?w=600", description: "Textbooks & novels" },
-    { name: "Sports", icon: "faFutbol", image: "https://images.pexels.com/photos/5131007/pexels-photo-5131007.jpeg?w=600", description: "Equipment & active wear" }
+    { name: "Electronics", image: "https://images.pexels.com/photos/18105/pexels-photo.jpg?w=600", description: "Laptops, phones & accessories" },
+    { name: "Fashion", image: "https://images.pexels.com/photos/298863/pexels-photo-298863.jpeg?w=600", description: "Clothing, shoes & style" },
+    { name: "Books", image: "https://images.pexels.com/photos/159866/books-book-pages-read-literature-159866.jpeg?w=600", description: "Textbooks & novels" },
+    { name: "Sports", image: "https://images.pexels.com/photos/5131007/pexels-photo-5131007.jpeg?w=600", description: "Equipment & active wear" }
   ]
 
   const testimonials = [
@@ -89,9 +115,10 @@ const LandingPage = () => {
 
   return (
     <div className="bg-white dark:bg-gray-900 overflow-hidden">
+      <Navbar />
+
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background Image - Business deal focused */}
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/40 z-10"></div>
           <img 
@@ -106,7 +133,6 @@ const LandingPage = () => {
             style={{ opacity, scale }}
             className="max-w-3xl"
           >
-            {/* Badge */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -116,7 +142,6 @@ const LandingPage = () => {
               <span className="text-white text-sm font-semibold tracking-wide">WELCOME TO MULUNGUSHI'S MARKETPLACE</span>
             </motion.div>
 
-            {/* Main Heading - More visible with better contrast */}
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -127,7 +152,6 @@ const LandingPage = () => {
               <span className="text-amber-400 block mt-2">Campus with Confidence</span>
             </motion.h1>
 
-            {/* Subheading */}
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -135,10 +159,9 @@ const LandingPage = () => {
               className="text-xl text-gray-100 mb-8 max-w-2xl leading-relaxed drop-shadow-lg"
             >
               The premier marketplace for Mulungushi University students. 
-              Discover great deals, sell your items, and connect with fellow students � all in one place.
+              Discover great deals, sell your items, and connect with fellow students – all in one place.
             </motion.p>
 
-            {/* CTA Buttons */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -161,7 +184,6 @@ const LandingPage = () => {
               </Link>
             </motion.div>
 
-            {/* Trust Indicators */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -194,7 +216,6 @@ const LandingPage = () => {
           </motion.div>
         </div>
 
-        {/* Scroll Indicator */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -290,7 +311,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Featured Products */}
+      {/* Featured Products - FIXED WITH IMAGES */}
       <section className="py-24 bg-white dark:bg-gray-900">
         <div className="container-custom">
           <motion.div
@@ -309,56 +330,67 @@ const LandingPage = () => {
           </motion.div>
 
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[1,2,3,4].map(i => (
-                <div key={i} className="bg-gray-100 dark:bg-gray-800 rounded-2xl h-96 animate-pulse"></div>
-              ))}
+            <div className="flex justify-center items-center py-20">
+              <FontAwesomeIcon icon={faSpinner} className="animate-spin text-4xl text-amber-500" />
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProducts.map((product, index) => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className="group"
-                >
-                  <Link to={`/products/${product.id}`} className="block">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
-                      <div className="relative aspect-square overflow-hidden bg-gray-100">
-                        <img 
-                          src={product.image_1 || product.image_url || "https://placehold.co/400x400/f59e0b/white?text=Product"} 
-                          alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-amber-50 transition-colors">
-                            <FontAwesomeIcon icon={faHeart} className="text-gray-600 hover:text-red-500" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="p-4">
-                        <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1">{product.name}</h3>
-                        <p className="text-sm text-gray-500 mt-1">{product.seller_name || "Campus Seller"}</p>
-                        <div className="flex items-center gap-1 mt-2">
-                          <div className="flex gap-0.5">
-                            {[...Array(5)].map((_, i) => <FontAwesomeIcon key={i} icon={faStar} className="text-amber-400 text-xs" />)}
+              {featuredProducts.map((product, index) => {
+                const imageUrl = getPrimaryImage(product)
+                const productImage = imageUrl || `https://placehold.co/400x400/amber-500/white?text=${product.name?.charAt(0) || 'P'}`
+                
+                return (
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.1 }}
+                    className="group"
+                  >
+                    <Link to={`/products/${product.id}`} className="block">
+                      <div className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
+                        <div className="relative aspect-square overflow-hidden bg-gray-100">
+                          <img 
+                            src={productImage} 
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            onError={(e) => {
+                              e.target.src = `https://placehold.co/400x400/amber-500/white?text=${product.name?.charAt(0) || 'P'}`
+                            }}
+                          />
+                          {product.is_featured && (
+                            <span className="absolute top-2 left-2 bg-amber-500 text-white text-xs px-2 py-1 rounded-full">
+                              ⭐ Featured
+                            </span>
+                          )}
+                          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button className="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-amber-50 transition-colors">
+                              <FontAwesomeIcon icon={faHeart} className="text-gray-600 hover:text-red-500" />
+                            </button>
                           </div>
-                          <span className="text-xs text-gray-500">(5)</span>
                         </div>
-                        <div className="flex items-center justify-between mt-3">
-                          <span className="text-xl font-bold text-amber-600">ZMW {product.price}</span>
-                          <button className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-sm transition-colors">
-                            Add to Cart
-                          </button>
+                        <div className="p-4">
+                          <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1">{product.name}</h3>
+                          <p className="text-sm text-gray-500 mt-1">{product.seller_name || "Campus Seller"}</p>
+                          <div className="flex items-center gap-1 mt-2">
+                            <div className="flex gap-0.5">
+                              {[...Array(5)].map((_, i) => <FontAwesomeIcon key={i} icon={faStar} className="text-amber-400 text-xs" />)}
+                            </div>
+                            <span className="text-xs text-gray-500">({product.review_count || 0})</span>
+                          </div>
+                          <div className="flex items-center justify-between mt-3">
+                            <span className="text-xl font-bold text-amber-600">K{parseFloat(product.price || 0).toFixed(2)}</span>
+                            <button className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-sm transition-colors">
+                              Add to Cart
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
+                    </Link>
+                  </motion.div>
+                )
+              })}
             </div>
           )}
         </div>

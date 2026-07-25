@@ -1,10 +1,13 @@
-import { Routes, Route, Navigate, useLocation } from "react-router-dom"
+import { Routes, Route, Navigate } from "react-router-dom"
 import { lazy, Suspense } from "react"
 import LoadingSpinner from "../components/common/LoadingSpinner"
 import Navbar from "../components/Navbar"
+import Footer from "../components/home/Footer"
 import { useAuth } from "../contexts/AuthContext"
 
-// Public Pages
+// ============================================
+// PUBLIC PAGES
+// ============================================
 const HomePage = lazy(() => import("../pages/HomePage"))
 const ProductsPage = lazy(() => import("../pages/ProductsPage"))
 const ProductDetailPage = lazy(() => import("../pages/ProductDetailPage"))
@@ -12,16 +15,25 @@ const LoginPage = lazy(() => import("../pages/auth/LoginPage"))
 const RegisterPage = lazy(() => import("../pages/auth/RegisterPage"))
 const PublicProfilePage = lazy(() => import("../pages/PublicProfilePage"))
 
-// Protected Pages
+// ============================================
+// BUYER PROTECTED PAGES
+// ============================================
 const ProfilePage = lazy(() => import("../pages/ProfilePage"))
 const CartPage = lazy(() => import("../pages/buyer/CartPage"))
 const CheckoutPage = lazy(() => import("../pages/buyer/CheckoutPage"))
 const OrdersPage = lazy(() => import("../pages/buyer/OrdersPage"))
 const OrderDetailPage = lazy(() => import("../pages/buyer/OrderDetailPage"))
 const WishlistPage = lazy(() => import("../pages/buyer/WishlistPage"))
-const MessagesPage = lazy(() => import("../pages/MessagesPage"))
 
-// Seller Pages
+// ============================================
+// CHAT PAGES
+// ============================================
+const MessagesPage = lazy(() => import("../pages/MessagesPage"))
+const ChatPage = lazy(() => import("../pages/ChatPage"))
+
+// ============================================
+// SELLER PAGES
+// ============================================
 const SellerDashboardPage = lazy(() => import("../pages/seller/SellerDashboardPage"))
 const ManageProductsPage = lazy(() => import("../pages/seller/ManageProductsPage"))
 const CreateProductPage = lazy(() => import("../pages/seller/CreateProductPage"))
@@ -30,12 +42,16 @@ const StoreSettingsPage = lazy(() => import("../pages/seller/StoreSettingsPage")
 const MySalesPage = lazy(() => import("../pages/seller/MySalesPage"))
 const SellerOrderDetailPage = lazy(() => import("../pages/seller/SellerOrderDetailPage"))
 
+// ============================================
+// ADMIN PAGES
+// ============================================
+const AdminDashboardPage = lazy(() => import("../pages/admin/AdminDashboardPage"))
+const AdminProductsPage = lazy(() => import("../pages/admin/AdminProductsPage"))
+
 const AppRoutes = () => {
   const { user, isAuthenticated, loading } = useAuth()
-  const location = useLocation()
-  
-  const isMessagesPage = location.pathname === "/messages"
   const isSeller = user?.role === "seller" || user?.role === "admin"
+  const isAdmin = user?.role === "admin"
 
   if (loading) {
     return <LoadingSpinner fullScreen />
@@ -44,7 +60,7 @@ const AppRoutes = () => {
   return (
     <Suspense fallback={<LoadingSpinner fullScreen />}>
       <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-        {!isMessagesPage && <Navbar />}
+        <Navbar />
         <main className="flex-grow">
           <Routes>
             {/* Public Routes */}
@@ -60,8 +76,11 @@ const AppRoutes = () => {
             <Route path="/cart" element={isAuthenticated ? <CartPage /> : <Navigate to="/login" />} />
             <Route path="/checkout" element={isAuthenticated ? <CheckoutPage /> : <Navigate to="/login" />} />
             <Route path="/wishlist" element={isAuthenticated ? <WishlistPage /> : <Navigate to="/login" />} />
-            <Route path="/messages" element={isAuthenticated ? <MessagesPage /> : <Navigate to="/login" />} />
             
+            {/* Chat Routes */}
+            <Route path="/messages" element={isAuthenticated ? <MessagesPage /> : <Navigate to="/login" />} />
+            <Route path="/chat" element={isAuthenticated ? <ChatPage /> : <Navigate to="/login" />} />
+
             {/* Orders */}
             <Route path="/orders" element={isAuthenticated ? <OrdersPage /> : <Navigate to="/login" />} />
             <Route path="/orders/:id" element={isAuthenticated ? <OrderDetailPage /> : <Navigate to="/login" />} />
@@ -75,15 +94,18 @@ const AppRoutes = () => {
             <Route path="/seller/sales" element={isAuthenticated && isSeller ? <MySalesPage /> : <Navigate to="/" />} />
             <Route path="/seller/orders/:id" element={isAuthenticated && isSeller ? <SellerOrderDetailPage /> : <Navigate to="/" />} />
 
+            {/* Admin Routes */}
+            <Route path="/admin/dashboard" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to="/" />} />
+            <Route path="/admin/products" element={isAuthenticated && isAdmin ? <AdminProductsPage /> : <Navigate to="/" />} />
+
             {/* 404 */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
-        {!isMessagesPage &&}
+        <Footer />
       </div>
     </Suspense>
   )
 }
 
 export default AppRoutes
-

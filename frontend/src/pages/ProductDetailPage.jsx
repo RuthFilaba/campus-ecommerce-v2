@@ -16,7 +16,9 @@ import {
   faBox,
   faEdit,
   faTrash,
-  faChartLine
+  faChartLine,
+  faChevronRight,
+  faChevronLeft as faChevronLeftIcon
 } from "@fortawesome/free-solid-svg-icons"
 import toast from "react-hot-toast"
 
@@ -27,7 +29,7 @@ const ProductDetailPage = () => {
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
-  const [currentImage, setCurrentImage] = useState(0)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [addingToCart, setAddingToCart] = useState(false)
   const [addingToWishlist, setAddingToWishlist] = useState(false)
   const [startingChat, setStartingChat] = useState(false)
@@ -42,6 +44,16 @@ const ProductDetailPage = () => {
       checkInWishlist()
     }
   }, [product, isAuthenticated, user])
+
+  // Get all images from product (matches backend get_images_list)
+  const getProductImages = (product) => {
+    const images = []
+    if (product?.image_1) images.push(product.image_1)
+    if (product?.image_2) images.push(product.image_2)
+    if (product?.image_3) images.push(product.image_3)
+    if (product?.image_url && images.length === 0) images.push(product.image_url)
+    return images
+  }
 
   const fetchProduct = async () => {
     try {
@@ -80,7 +92,7 @@ const ProductDetailPage = () => {
     setAddingToCart(true)
     try {
       await api.post('/cart/add/', { product_id: product.id, quantity })
-      toast.success("Added to cart! ??")
+      toast.success(`Added ${quantity} x ${product.name} to cart!`)
     } catch (error) {
       console.error("Failed to add to cart:", error)
       toast.error(error.response?.data?.message || "Failed to add to cart")
@@ -105,7 +117,7 @@ const ProductDetailPage = () => {
     try {
       await api.post('/wishlist/add/', { product_id: product.id })
       setInWishlist(true)
-      toast.success("Added to wishlist! ??")
+      toast.success("Added to wishlist!")
     } catch (error) {
       if (error.response?.data?.error?.includes("own product")) {
         toast.error("You cannot add your own product to wishlist")
@@ -190,6 +202,20 @@ const ProductDetailPage = () => {
     }
   }
 
+  const nextImage = () => {
+    const images = getProductImages(product)
+    if (images.length > 1) {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length)
+    }
+  }
+
+  const prevImage = () => {
+    const images = getProductImages(product)
+    if (images.length > 1) {
+      setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -204,20 +230,36 @@ const ProductDetailPage = () => {
   const isSellerAccount = user?.role === "seller"
   const isBuyerAccount = isAuthenticated && !isSellerAccount
 
-  const images = []
-  if (product.image_1) images.push(product.image_1)
-  if (product.image_2) images.push(product.image_2)
-  if (product.image_3) images.push(product.image_3)
-  if (product.image_url) images.push(product.image_url)
-  if (images.length === 0) {
-    images.push(`https://placehold.co/600x600/amber-500/white?text=${product.name?.charAt(0) || 'P'}`)
+  const images = getProductImages(product)
+  const displayImages = images.length > 0 ? images : [`https://placehold.co/600x600/amber-500/white?text=${product.name?.charAt(0) || 'P'}`]
+  const currentImage = displayImages[currentImageIndex] || displayImages[0]
+
+  // Category display (matches backend)
+  const categoryMap = {
+    'food': 'Food & Drinks',
+    'academic': 'Academic',
+    'fashion': 'Fashion',
+    'tech-mobile': 'Tech & Mobile',
+    'events': 'Events & Tickets',
+    'marketplace': 'Marketplace'
   }
+  const categoryDisplay = categoryMap[product.category] || product.category || 'General'
+
+  // Condition display (matches backend)
+  const conditionMap = {
+    'new': 'Brand New',
+    'like_new': 'Like New',
+    'good': 'Good',
+    'fair': 'Fair',
+    'poor': 'Poor'
+  }
+  const conditionDisplay = conditionMap[product.condition] || product.condition || 'Good'
 
   const price = parseFloat(product.price) || 0
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
-      <div className="container-custom max-w-6xl">
+      <div className="container-custom max-w-6xl mx-auto px-4">
         <button
           onClick={() => navigate(-1)}
           className="mb-4 flex items-center gap-2 text-gray-600 hover:text-amber-500 transition-colors"
@@ -230,21 +272,48 @@ const ProductDetailPage = () => {
           <div className="grid md:grid-cols-2 gap-8 p-6">
             {/* Image Gallery */}
             <div>
-              <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+              <div className="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
                 <img
-                  src={images[currentImage]}
+                  src={currentImage}
                   alt={product.name}
                   className="w-full h-full object-cover"
                 />
+                {displayImages.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-md transition-colors"
+                    >
+                      <FontAwesomeIcon icon={faChevronLeftIcon} />
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-md transition-colors"
+                    >
+                      <FontAwesomeIcon icon={faChevronRight} />
+                    </button>
+                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
+                      {displayImages.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setCurrentImageIndex(idx)}
+                          className={`w-2 h-2 rounded-full transition-colors ${
+                            idx === currentImageIndex ? "bg-amber-500" : "bg-white/50"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
-              {images.length > 1 && (
+              {displayImages.length > 1 && (
                 <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-                  {images.map((img, idx) => (
+                  {displayImages.map((img, idx) => (
                     <button
                       key={idx}
-                      onClick={() => setCurrentImage(idx)}
+                      onClick={() => setCurrentImageIndex(idx)}
                       className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${
-                        currentImage === idx ? "border-amber-500" : "border-transparent"
+                        currentImageIndex === idx ? "border-amber-500" : "border-transparent"
                       }`}
                     >
                       <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
@@ -256,6 +325,13 @@ const ProductDetailPage = () => {
 
             {/* Product Info */}
             <div>
+              {/* Featured Badge */}
+              {product.is_featured && (
+                <span className="inline-block bg-amber-500 text-white text-xs px-2 py-1 rounded-full mb-2">
+                  ⭐ Featured Product
+                </span>
+              )}
+              
               <h1 className="text-2xl md:text-3xl font-bold mb-3">{product.name}</h1>
               
               {/* Seller info */}
@@ -291,6 +367,24 @@ const ProductDetailPage = () => {
                 <span className="text-3xl font-bold text-amber-600 dark:text-amber-400">
                   K{price.toFixed(2)}
                 </span>
+                {product.stock > 0 && product.stock <= 5 && (
+                  <span className="ml-3 text-sm text-orange-500">🔥 Only {product.stock} left!</span>
+                )}
+              </div>
+
+              {/* Category & Condition */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-sm">
+                  📂 {categoryDisplay}
+                </span>
+                <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-sm">
+                  📦 {conditionDisplay}
+                </span>
+                {product.is_approved && (
+                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
+                    ✅ Verified
+                  </span>
+                )}
               </div>
 
               {/* Rating */}
@@ -300,11 +394,11 @@ const ProductDetailPage = () => {
                     <FontAwesomeIcon 
                       key={star} 
                       icon={faStar} 
-                      className={star <= 4 ? "text-amber-400" : "text-gray-300"}
+                      className={star <= (product.rating || 4) ? "text-amber-400" : "text-gray-300"}
                     />
                   ))}
                 </div>
-                <span className="text-sm text-gray-500">(0 reviews)</span>
+                <span className="text-sm text-gray-500">({product.review_count || 0} reviews)</span>
               </div>
 
               {/* Description */}
@@ -313,42 +407,6 @@ const ProductDetailPage = () => {
                 <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                   {product.description || "No description available."}
                 </p>
-              </div>
-
-              {/* Details */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-500 mb-1">Condition</h3>
-                  <span className="inline-block px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-sm">
-                    {product.condition_display || product.condition || "Good"}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-500 mb-1">Category</h3>
-                  <span className="inline-block px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-sm">
-                    {product.category_display || product.category || "General"}
-                  </span>
-                </div>
-                
-                {/* Stock - Only visible to product owner */}
-                {isOwner && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-500 mb-1">Stock</h3>
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm ${
-                      product.stock > 10 ? "bg-green-100 text-green-700" : 
-                      product.stock > 0 ? "bg-yellow-100 text-yellow-700" : 
-                      "bg-red-100 text-red-700"
-                    }`}>
-                      <FontAwesomeIcon icon={faBox} className="mr-1 text-xs" />
-                      {product.stock > 0 ? `${product.stock} available` : "Out of stock"}
-                    </span>
-                  </div>
-                )}
-                
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-500 mb-1">Views</h3>
-                  <span className="text-gray-600 dark:text-gray-400">{product.views_count || 0} views</span>
-                </div>
               </div>
 
               {/* SELLER MANAGEMENT PANEL */}
@@ -360,7 +418,7 @@ const ProductDetailPage = () => {
                       Manage Your Product
                     </p>
                     <p className="text-blue-600 dark:text-blue-400 text-sm mt-1">
-                      This is your product. Use these tools to manage your inventory.
+                      Stock: {product.stock} items available
                     </p>
                   </div>
                   
@@ -458,7 +516,7 @@ const ProductDetailPage = () => {
                   )}
 
                   {product.stock > 0 && product.stock <= 5 && (
-                    <p className="text-sm text-orange-500 mb-4">?? Only {product.stock} left in stock!</p>
+                    <p className="text-sm text-orange-500 mb-4">🔥 Only {product.stock} left in stock!</p>
                   )}
                 </>
               )}

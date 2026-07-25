@@ -1,10 +1,11 @@
-import { BrowserRouter as Router } from "react-router-dom";
-import { Toaster } from "react-hot-toast";
-import { AuthProvider } from "./contexts/AuthContext";
-import { CartProvider } from "./contexts/CartContext";
-import { ThemeProvider } from "./contexts/ThemeContext";
-import AppRoutes from "./routes";
-import { ErrorBoundary } from "react-error-boundary";
+import React from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from './contexts/AuthContext';
+import { CartProvider } from './contexts/CartContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import AppRoutes from './routes';
+import { ErrorBoundary } from 'react-error-boundary';
 
 function ErrorFallback({ error, resetErrorBoundary }) {
   return (
@@ -29,9 +30,9 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <CartProvider>
-            <Router>
+            <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                <Toaster 
+                <Toaster
                   position="top-right"
                   toastOptions={{
                     duration: 4000,
