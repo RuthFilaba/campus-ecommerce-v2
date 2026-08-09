@@ -28,92 +28,78 @@ const PublicProfilePage = () => {
     fetchUserData()
   }, [userId])
 
+  // Helper to isolate only this seller's products
+  const filterBySeller = (rawList, targetId) => {
+    return rawList.filter((product) => {
+      const sellerId =
+        product.seller?.id ||
+        product.seller_id ||
+        product.seller ||
+        product.user_id ||
+        product.user
+      return String(sellerId) === String(targetId)
+    })
+  }
+
   const fetchUserData = async () => {
     setLoading(true)
-    
+
     try {
-      // Since backend doesn't have /users/{id}/, we need to get data differently
       let userData = null
-      
-      // If viewing own profile, use /users/me/
+      let filteredProducts = []
+
+      // 1. Fetch products using possible query param variations
+      const productsResponse = await api.get(`/products/?seller_id=${userId}`)
+      let rawProducts = []
+      if (productsResponse.data?.results) {
+        rawProducts = productsResponse.data.results
+      } else if (Array.isArray(productsResponse.data)) {
+        rawProducts = productsResponse.data
+      }
+
+      // Filter locally to prevent displaying other sellers' items if backend didn't filter
+      filteredProducts = filterBySeller(rawProducts, userId)
+
+      // 2. Determine profile details
       if (currentUser?.id == userId) {
         const response = await api.get('/users/me/')
         userData = response.data.user || response.data
-        console.log("Own profile data:", userData)
+      } else if (filteredProducts.length > 0) {
+        const firstProduct = filteredProducts[0]
+        userData = {
+          id: parseInt(userId),
+          email: firstProduct.seller_email || `user${userId}@campusecom.zm`,
+          first_name: firstProduct.seller_name?.split(' ')[0] || "Campus",
+          last_name: firstProduct.seller_name?.split(' ')[1] || "Seller",
+          full_name: firstProduct.seller_name || "Campus Seller",
+          role: "seller",
+          rating: firstProduct.seller_rating || "4.5",
+          review_count: firstProduct.seller_review_count || 0,
+          total_sales: firstProduct.seller_total_sales || 0,
+          is_verified: firstProduct.seller_verified || false,
+          phone: "",
+          bio: `Seller on CampusEcom since ${new Date().getFullYear()}`
+        }
       } else {
-        // For other users, we need to get data from their products
-        // Get user's products first
-        const productsResponse = await api.get(`/products/?seller_id=${userId}`)
-        let productsData = []
-        if (productsResponse.data.results) {
-          productsData = productsResponse.data.results
-        } else if (Array.isArray(productsResponse.data)) {
-          productsData = productsResponse.data
+        userData = {
+          id: parseInt(userId),
+          email: `user${userId}@campusecom.zm`,
+          first_name: "Campus",
+          last_name: "User",
+          full_name: "Campus User",
+          role: "user",
+          rating: "0.00",
+          review_count: 0,
+          total_sales: 0,
+          is_verified: false,
+          phone: "",
+          bio: "Member of CampusEcom community"
         }
-        
-        if (productsData.length > 0) {
-          // Extract seller info from first product
-          const firstProduct = productsData[0]
-          userData = {
-            id: parseInt(userId),
-            email: firstProduct.seller_email || `user${userId}@campusecom.zm`,
-            first_name: firstProduct.seller_name?.split(' ')[0] || "Campus",
-            last_name: firstProduct.seller_name?.split(' ')[1] || "Seller",
-            full_name: firstProduct.seller_name || "Campus Seller",
-            role: "seller",
-            rating: firstProduct.seller_rating || "4.5",
-            review_count: firstProduct.seller_review_count || 0,
-            total_sales: firstProduct.seller_total_sales || 0,
-            is_verified: firstProduct.seller_verified || false,
-            phone: "",
-            bio: `Seller on CampusEcom since ${new Date().getFullYear()}`
-          }
-        } else {
-          // If no products, create basic profile
-          userData = {
-            id: parseInt(userId),
-            email: `user${userId}@campusecom.zm`,
-            first_name: "Campus",
-            last_name: "User",
-            full_name: "Campus User",
-            role: "user",
-            rating: "0.00",
-            review_count: 0,
-            total_sales: 0,
-            is_verified: false,
-            phone: "",
-            bio: "Member of CampusEcom community"
-          }
-        }
-        setProducts(productsData)
       }
-      
+
       setProfile(userData)
-      
-      // If we didn't get products from the first call and it's not own profile, fetch them
-      if (currentUser?.id != userId && products.length === 0) {
-        const productsResponse = await api.get(`/products/?seller_id=${userId}`)
-        let productsData = []
-        if (productsResponse.data.results) {
-          productsData = productsResponse.data.results
-        } else if (Array.isArray(productsResponse.data)) {
-          productsData = productsResponse.data
-        }
-        setProducts(productsData)
-      }
-      
-      // If viewing own profile, fetch their products
-      if (currentUser?.id == userId) {
-        const productsResponse = await api.get(`/products/?seller_id=${userId}`)
-        let productsData = []
-        if (productsResponse.data.results) {
-          productsData = productsResponse.data.results
-        } else if (Array.isArray(productsResponse.data)) {
-          productsData = productsResponse.data
-        }
-        setProducts(productsData)
-      }
-      
+      setProducts(filteredProducts)
+
     } catch (error) {
       console.error("Failed to fetch profile:", error)
     } finally {

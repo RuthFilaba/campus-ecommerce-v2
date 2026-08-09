@@ -1,3 +1,4 @@
+// to do handle featured products
 import { useState, useEffect } from "react"
 import { useAuth } from "../../contexts/AuthContext"
 import api from "../../services/api"
@@ -32,15 +33,13 @@ const AdminProductsPage = () => {
   const fetchAllData = async () => {
     setLoading(true)
     try {
-      const [allRes, pendingRes, featuredRes] = await Promise.all([
+      const [allRes, pendingRes] = await Promise.all([
         api.get('/products/'),
-        api.get('/products/pending/'),
-        api.get('/products/featured/')
+        api.get('/products/pending/')
       ])
       
       setProducts(allRes.data.results || allRes.data || [])
       setPendingProducts(pendingRes.data.results || pendingRes.data || [])
-      setFeaturedProducts(featuredRes.data.results || featuredRes.data || [])
     } catch (error) {
       console.error("Failed to fetch data:", error)
       toast.error("Failed to load data")

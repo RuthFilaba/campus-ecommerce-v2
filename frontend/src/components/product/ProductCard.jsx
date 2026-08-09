@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom"
 import { useState } from "react"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faShoppingCart, faHeart, faEye, faEdit, faTrash, faSpinner } from "@fortawesome/free-solid-svg-icons"
+import { faShoppingCart, faHeart, faEye, faEdit, faTrash, faSpinner, faStore } from "@fortawesome/free-solid-svg-icons"
 import { useAuth } from "../../contexts/AuthContext"
 import api from "../../services/api"
 import toast from "react-hot-toast"
@@ -13,6 +13,7 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onEdit, onDelete, 
   
   // Determine if current user is the owner of this product
   const isProductOwner = isAuthenticated && user && product?.seller_id && Number(product.seller_id) === Number(user?.id)
+  const sellerId = product?.seller_id || product?.seller?.id || product?.seller
   
   const price = parseFloat(product.price) || 0
   
@@ -103,6 +104,17 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onEdit, onDelete, 
       
       {/* Product Info */}
       <div className="p-4">
+        {/* Clickable Seller Link */}
+        {sellerId && (
+          <Link 
+            to={`/profile/${sellerId}`}
+            className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-amber-500 dark:hover:text-amber-400 mb-1 transition-colors"
+          >
+            <FontAwesomeIcon icon={faStore} className="text-amber-500" />
+            <span className="truncate">{product.seller_name || "Campus Seller"}</span>
+          </Link>
+        )}
+
         <Link to={`/products/${product.id}`}>
           <h3 className="font-semibold text-gray-800 dark:text-white mb-1 hover:text-amber-500 transition-colors line-clamp-2">
             {product.name}

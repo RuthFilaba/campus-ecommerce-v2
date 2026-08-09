@@ -10,6 +10,7 @@ from .views import (
     ApproveProductView,
     RejectProductView,
     SellerDashboardView,
+    ProductImageUploadView,
 )
 
 urlpatterns = [
@@ -23,4 +24,5 @@ urlpatterns = [
     path('<int:pk>/delete/', ProductDeleteView.as_view(), name='product-delete'),
     path('<int:pk>/approve/', ApproveProductView.as_view(), name='approve-product'),
     path('<int:pk>/reject/', RejectProductView.as_view(), name='reject-product'),
+    path('<int:pk>/upload-image/', ProductImageUploadView.as_view(), name='product-upload-image'),
 ]

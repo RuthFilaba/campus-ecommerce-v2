@@ -27,22 +27,21 @@ const CreateProductPage = () => {
     name: "",
     description: "",
     price: "",
-    category: "other",
+    category: "marketplace", // Default to marketplace
     condition: "good",
     stock: 1
   })
   const [images, setImages] = useState([])
   const [imagePreviews, setImagePreviews] = useState([])
 
+ 
   const categories = [
-    { value: "electronics", label: "Electronics & Gadgets" },
-    { value: "clothing", label: "Clothing & Fashion" },
-    { value: "books", label: "Books & Stationery" },
-    { value: "furniture", label: "Furniture & Home" },
-    { value: "food", label: "Food & Groceries" },
-    { value: "beauty", label: "Beauty & Health" },
-    { value: "sports", label: "Sports & Outdoors" },
-    { value: "other", label: "Other Items" }
+    { value: "food", label: "Food & Drinks" },
+    { value: "academic", label: " Academic" },
+    { value: "fashion", label: "Fashion" },
+    { value: "tech-mobile", label: "Tech & Mobile" },
+    { value: "events", label: "Events & Tickets" },
+    { value: "marketplace", label: " Marketplace" }
   ]
 
   const conditions = [
@@ -112,8 +111,6 @@ const CreateProductPage = () => {
       console.log("Full API Response:", response)
       console.log("Response data:", response.data)
       
-      // Try to get product ID from various possible locations
-      // Your backend might return ID directly or in a nested object
       if (response.data.id) {
         createdProductId = response.data.id
         console.log("Found ID directly:", createdProductId)
@@ -124,7 +121,6 @@ const CreateProductPage = () => {
         createdProductId = response.data.product_id
         console.log("Found product_id:", createdProductId)
       } else {
-        // If no ID found, check if we can get it from the product list
         console.warn("No ID found in response, checking product list...")
         const productsResponse = await api.get('/products/my-products/')
         const latestProduct = productsResponse.data.results?.[0] || productsResponse.data?.[0]
@@ -142,7 +138,6 @@ const CreateProductPage = () => {
       
       toast.success(`Product created! ID: ${createdProductId}`)
       
-      // Upload images if any
       if (images.length > 0) {
         setUploadingImages(true)
         
@@ -166,7 +161,6 @@ const CreateProductPage = () => {
             toast.error(`Image ${i + 1} upload failed: ${uploadError.response?.data?.message || "Unknown error"}`)
           }
           
-          // Small delay between uploads
           await new Promise(resolve => setTimeout(resolve, 500))
         }
         
@@ -187,16 +181,15 @@ const CreateProductPage = () => {
       console.error("Failed to create product:", error)
       console.error("Error response:", error.response?.data)
       
-      let errorMsg = "Failed to create product"
-      if (error.response?.data?.message) {
-        errorMsg = error.response.data.message
+      if (error.response?.data?.category) {
+        toast.error(`Category error: ${error.response.data.category.join(', ')}`)
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message)
       } else if (error.response?.data?.error) {
-        errorMsg = error.response.data.error
-      } else if (error.message) {
-        errorMsg = error.message
+        toast.error(error.response.data.error)
+      } else {
+        toast.error("Failed to create product. Please check your data.")
       }
-      
-      toast.error(errorMsg)
     } finally {
       setLoading(false)
     }

@@ -11,12 +11,10 @@ import AnimatedButton from "../../components/ui/AnimatedButton"
 import { loginSchema } from "../../utils/validators"
 
 const LoginPage = () => {
-  const { login } = useAuth()
+  const { login,user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [isLoading, setIsLoading] = useState(false)
-  
-  const from = location.state?.from?.pathname || "/dashboard"
 
   const {
     register,
@@ -32,8 +30,18 @@ const LoginPage = () => {
     setIsLoading(false)
     
     if (success) {
-      navigate(from, { replace: true })
+      let defaultDestination = "/"
+      if (user?.role == "admin")
+        defaultDestination = "/admin/products"
+      else if (user?.role == "seller")
+        defaultDestination = "/seller/dashboard"
+      else if (user?.role == "buyer")
+        defaultDestination = "/dashboard"
+
+      const destination = location.state?.from?.pathname || defaultDestination
+      navigate(destination, { replace: true })
     }
+
   }
 
   return (
@@ -78,7 +86,7 @@ const LoginPage = () => {
             <FormInput
               label="Password"
               type="password"
-              placeholder="••••••••"
+              placeholder=""
               icon={faLock}
               required
               error={errors.password?.message}
@@ -145,8 +153,6 @@ const LoginPage = () => {
           transition={{ delay: 0.4 }}
           className="text-center text-xs text-gray-500 dark:text-gray-400"
         >
-          <p>Demo Credentials:</p>
-          <p>Email: demo@campusecom.zm | Password: demo123</p>
         </motion.div>
       </motion.div>
     </div>

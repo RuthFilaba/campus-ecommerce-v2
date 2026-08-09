@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Navbar from "../components/home/Navbar";
 import Hero from "../components/home/Hero";
 import CategoryPills from "../components/home/CategoryPills";
 import HorizontalProductRow from "../components/home/HorizontalProductRow";
@@ -13,7 +12,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <Navbar />
       <main className="flex-grow">
         <Hero />
         

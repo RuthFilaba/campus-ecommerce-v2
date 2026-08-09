@@ -258,33 +258,36 @@ const ProductDetailPage = () => {
             <div>
               <h1 className="text-2xl md:text-3xl font-bold mb-3">{product.name}</h1>
               
-              {/* Seller info */}
-              <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                    <FontAwesomeIcon icon={faStore} className="text-amber-500 text-sm" />
-                  </div>
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Sold by <span className="font-medium">{product.seller_name || "Campus Seller"}</span>
-                  </span>
+            {/* Seller Info with Fallback Check */}
+            <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+              <Link 
+                to={`/profile/${product.seller_id}`} 
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              >
+                <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/40 rounded-full flex items-center justify-center">
+                  <FontAwesomeIcon icon={faStore} className="text-amber-500 text-sm" />
                 </div>
-                
-                {/* Chat Button - Only for buyers */}
-                {isBuyerAccount && !isOwner && (
-                  <button
-                    onClick={handleChat}
-                    disabled={startingChat}
-                    className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
-                  >
-                    {startingChat ? (
-                      <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
-                    ) : (
-                      <FontAwesomeIcon icon={faMessage} />
-                    )}
-                    {startingChat ? "Opening Chat..." : "Chat with Seller"}
-                  </button>
-                )}
-              </div>
+                <span className="text-gray-600 dark:text-gray-400">
+                  Sold by <span className="font-medium text-amber-600 dark:text-amber-400 underline">{product.seller_name || "Campus Seller"}</span>
+                </span>
+              </Link>
+              
+              {/* Chat Button */}
+              {isBuyerAccount && !isOwner && (
+                <button
+                  onClick={handleChat}
+                  disabled={startingChat}
+                  className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+                >
+                  {startingChat ? (
+                    <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                  ) : (
+                    <FontAwesomeIcon icon={faMessage} />
+                  )}
+                  {startingChat ? "Opening Chat..." : "Chat with Seller"}
+                </button>
+              )}
+            </div>
 
               {/* Price */}
               <div className="mb-4">

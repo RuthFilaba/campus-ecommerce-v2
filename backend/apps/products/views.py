@@ -285,3 +285,88 @@ class SellerDashboardView(APIView):
             'recent_orders': recent_orders,
             'low_stock': low_stock,
         })
+
+
+class ProductImageUploadView(APIView):
+    """
+    Upload an image for a specific product.
+    Supports multiple image uploads (max 3 images).
+    """
+    permission_classes = [IsSellerOrAdmin]
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def post(self, request, pk):
+        try:
+            product = Product.objects.get(pk=pk)
+            
+            # Check if user owns the product or is admin
+            if request.user.role != 'admin' and product.seller != request.user:
+                return Response(
+                    {'error': 'You do not have permission to upload images for this product'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Get the image from request
+            image_file = request.FILES.get('image')
+            if not image_file:
+                return Response(
+                    {'error': 'No image file provided'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validate file size (max 5MB)
+            if image_file.size > 5 * 1024 * 1024:
+                return Response(
+                    {'error': 'Image size must be less than 5MB'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validate file type
+            valid_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+            if image_file.content_type not in valid_types:
+                return Response(
+                    {'error': 'Invalid file type. Please upload JPEG, PNG, GIF, or WEBP images.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Find the first available image slot
+            image_slot = None
+            for i in range(1, 4):
+                image_field = getattr(product, f'image_{i}')
+                if not image_field:
+                    image_slot = i
+                    break
+            
+            if not image_slot:
+                return Response(
+                    {'error': 'Maximum 3 images per product'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Save the image
+            image_field = getattr(product, f'image_{image_slot}')
+            image_field.save(image_file.name, image_file, save=True)
+            
+            # Also set image_url if it's the first image
+            if image_slot == 1:
+                product.image_url = image_field.url
+            
+            product.save()
+            
+            return Response({
+                'success': True,
+                'message': f'Image uploaded successfully',
+                'image_url': image_field.url,
+                'image_slot': image_slot
+            }, status=status.HTTP_200_OK)
+            
+        except Product.DoesNotExist:
+            return Response(
+                {'error': 'Product not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to upload image: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
