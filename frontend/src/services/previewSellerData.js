@@ -31,7 +31,7 @@ export function readAllPreviewSellerProducts() {
       category: categoryMap[product.category] || product.category,
       seller_name: settings.store_name,
       campus: settings.campus,
-      image_url: product.image_url || "https://placehold.co/800x700/f1f5f9/475569?text=CampusEcom+Listing",
+      image_url: product.image_url || product.images?.[0] || "https://placehold.co/800x700/f1f5f9/475569?text=CampusEcom+Listing",
     };
   });
 }
@@ -47,7 +47,7 @@ export function createPreviewSellerProduct(ownerEmail, productData) {
     is_approved: true,
     is_submitted: true,
     created_at: new Date().toISOString(),
-    image_url: "",
+    image_url: productData.images?.[0] || "",
   };
   writeAllProducts([product, ...products]);
   return product;

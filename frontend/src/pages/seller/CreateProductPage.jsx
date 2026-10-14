@@ -20,6 +20,24 @@ import toast from "react-hot-toast"
 import { isPreviewAuth } from "../../services/auth"
 import { createPreviewSellerProduct } from "../../services/previewSellerData"
 
+const imageFileToDataUrl = async (file) => {
+  const bitmap = await createImageBitmap(file)
+  const scale = Math.min(1, 1280 / Math.max(bitmap.width, bitmap.height))
+  const canvas = document.createElement("canvas")
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale))
+  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  bitmap.close()
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.76))
+  if (!blob) throw new Error("This image could not be prepared for local storage")
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = () => reject(new Error("This image could not be read"))
+    reader.readAsDataURL(blob)
+  })
+}
+
 const CreateProductPage = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -62,6 +80,15 @@ const CreateProductPage = () => {
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files)
+    e.target.value = ""
+    if (files.some((file) => !file.type.startsWith("image/"))) {
+      toast.error("Choose image files only")
+      return
+    }
+    if (files.some((file) => file.size > 5 * 1024 * 1024)) {
+      toast.error("Each image must be 5MB or smaller")
+      return
+    }
     if (images.length + files.length > 3) {
       toast.error("Maximum 3 images allowed")
       return
@@ -110,7 +137,8 @@ const CreateProductPage = () => {
       }
 
       if (isPreviewAuth) {
-        createPreviewSellerProduct(user?.email, productData)
+        const storedImages = await Promise.all(images.map(imageFileToDataUrl))
+        createPreviewSellerProduct(user?.email, { ...productData, images: storedImages })
         toast.success("Preview listing saved to your seller workspace")
         navigate("/seller/products")
         return
@@ -197,7 +225,9 @@ const CreateProductPage = () => {
       console.error("Error response:", error.response?.data)
       
       let errorMsg = "Failed to create product"
-      if (error.response?.data?.message) {
+      if (error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED") {
+        errorMsg = "Browser storage is full. Remove some saved listings or use smaller images, then try again."
+      } else if (error.response?.data?.message) {
         errorMsg = error.response.data.message
       } else if (error.response?.data?.error) {
         errorMsg = error.response.data.error
