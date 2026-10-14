@@ -28,11 +28,14 @@ export const AuthProvider = ({ children }) => {
   const loadUser = async () => {
     try {
       const userData = await getCurrentUser()
-      setUser(userData.user || userData)
+      const currentUser = userData.user || userData
+      setUser(currentUser)
+      return currentUser
     } catch (error) {
       console.error('Failed to load user:', error)
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
+      return null
     } finally {
       setLoading(false)
     }
@@ -46,15 +49,15 @@ export const AuthProvider = ({ children }) => {
       if (data.success && data.tokens) {
         localStorage.setItem('access_token', data.tokens.access)
         localStorage.setItem('refresh_token', data.tokens.refresh)
-        await loadUser()
+        const currentUser = await loadUser()
         toast.success(`Welcome back, ${data.user?.full_name || email}!`)
-        return true
+        return currentUser || true
       } else if (data.access && data.refresh) {
         localStorage.setItem('access_token', data.access)
         localStorage.setItem('refresh_token', data.refresh)
-        await loadUser()
+        const currentUser = await loadUser()
         toast.success('Welcome back!')
-        return true
+        return currentUser || true
       } else {
         throw new Error('Invalid response format')
       }

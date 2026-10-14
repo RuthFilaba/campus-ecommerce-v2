@@ -20,7 +20,6 @@ const LoginPage = () => {
   const location = useLocation()
   const [isLoading, setIsLoading] = useState(false)
   
-  const from = location.state?.from?.pathname || "/"
 
   const {
     register,
@@ -34,24 +33,26 @@ const LoginPage = () => {
 
   const onSubmit = async (data) => {
     setIsLoading(true)
-    const success = await login(data.email, data.password)
+    const result = await login(data.email, data.password)
     setIsLoading(false)
     
-    if (success) {
+    if (result) {
       const pendingPurchase = readPendingPurchase()
-      if (pendingPurchase?.product && pendingPurchase.type === "add-to-cart") {
+      const isSeller = result?.role === "seller" || result?.role === "admin"
+      if (!isSeller && pendingPurchase?.product && pendingPurchase.type === "add-to-cart") {
         addItem(pendingPurchase.product, pendingPurchase.quantity)
         clearPendingPurchase()
         navigate("/cart", { replace: true })
         return
       }
-      if (pendingPurchase?.product && pendingPurchase.type === "buy-now") {
+      if (!isSeller && pendingPurchase?.product && pendingPurchase.type === "buy-now") {
         saveDirectCheckout(pendingPurchase.product, pendingPurchase.quantity)
         clearPendingPurchase()
         navigate("/checkout", { replace: true })
         return
       }
-      navigate(from, { replace: true })
+      const destination = location.state?.from?.pathname || (isSeller ? "/seller/dashboard" : "/")
+      navigate(destination, { replace: true })
     }
   }
 

@@ -30,10 +30,13 @@ const EditProductPage = lazy(() => import("../pages/seller/EditProductPage"));
 const StoreSettingsPage = lazy(() => import("../pages/seller/StoreSettingsPage"));
 const MySalesPage = lazy(() => import("../pages/seller/MySalesPage"));
 const SellerOrderDetailPage = lazy(() => import("../pages/seller/SellerOrderDetailPage"));
+const SellerActiveOrdersPage = lazy(() => import("../pages/seller/ActiveOrdersPage"));
 
 const AppRoutes = () => {
   const { user, isAuthenticated, loading } = useAuth();
   const isSeller = user?.role === "seller" || user?.role === "admin";
+  const isBuyer = isAuthenticated && !isSeller;
+  const buyerRedirect = isSeller ? "/seller/dashboard" : "/login";
 
   if (loading) {
     return <LoadingSpinner fullScreen />;
@@ -53,18 +56,19 @@ const AppRoutes = () => {
             <Route path="/register" element={<RegisterPage />} />
 
             <Route path="/profile" element={isAuthenticated ? <ProfilePage /> : <Navigate to="/login" />} />
-            <Route path="/cart" element={isAuthenticated ? <CartPage /> : <Navigate to="/login" state={{ from: { pathname: "/cart" } }} replace />} />
-            <Route path="/checkout" element={isAuthenticated ? <CheckoutPage /> : <Navigate to="/login" state={{ from: { pathname: "/checkout" } }} replace />} />
-            <Route path="/wishlist" element={<WishlistPage />} />
+            <Route path="/cart" element={isBuyer ? <CartPage /> : <Navigate to={buyerRedirect} state={{ from: { pathname: "/cart" } }} replace />} />
+            <Route path="/checkout" element={isBuyer ? <CheckoutPage /> : <Navigate to={buyerRedirect} state={{ from: { pathname: "/checkout" } }} replace />} />
+            <Route path="/wishlist" element={isBuyer ? <WishlistPage /> : <Navigate to={buyerRedirect} replace />} />
             <Route path="/messages" element={isAuthenticated ? <MessagesPage /> : <Navigate to="/login" />} />
             
-            <Route path="/orders" element={isAuthenticated ? <OrdersPage /> : <Navigate to="/login" />} />
-            <Route path="/orders/:id" element={isAuthenticated ? <OrderDetailPage /> : <Navigate to="/login" />} />
+            <Route path="/orders" element={isBuyer ? <OrdersPage /> : <Navigate to={buyerRedirect} replace />} />
+            <Route path="/orders/:id" element={isBuyer ? <OrderDetailPage /> : <Navigate to={buyerRedirect} replace />} />
 
             <Route path="/seller/dashboard" element={isAuthenticated && isSeller ? <SellerDashboardPage /> : <Navigate to="/" />} />
             <Route path="/seller/products" element={isAuthenticated && isSeller ? <ManageProductsPage /> : <Navigate to="/" />} />
             <Route path="/seller/products/create" element={isAuthenticated && isSeller ? <CreateProductPage /> : <Navigate to="/" />} />
             <Route path="/seller/products/edit/:id" element={isAuthenticated && isSeller ? <EditProductPage /> : <Navigate to="/" />} />
+            <Route path="/seller/orders" element={isAuthenticated && isSeller ? <SellerActiveOrdersPage /> : <Navigate to="/" />} />
             <Route path="/seller/settings" element={isAuthenticated && isSeller ? <StoreSettingsPage /> : <Navigate to="/" />} />
             <Route path="/seller/sales" element={isAuthenticated && isSeller ? <MySalesPage /> : <Navigate to="/" />} />
             <Route path="/seller/orders/:id" element={isAuthenticated && isSeller ? <SellerOrderDetailPage /> : <Navigate to="/" />} />

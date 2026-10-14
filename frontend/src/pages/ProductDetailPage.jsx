@@ -14,7 +14,8 @@ export default function ProductDetailPage() {
   const location = useLocation();
   const product = previewProducts.find((item) => String(item.id) === String(id));
   const { addItem } = useCart();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const isSeller = user?.role === "seller" || user?.role === "admin";
   const [quantity, setQuantity] = useState(1);
   const [saved, setSaved] = useState(() => product ? readPreviewWishlist().includes(product.id) : false);
 
@@ -77,7 +78,7 @@ export default function ProductDetailPage() {
             </div>
             <div className="flex items-center justify-between gap-3 px-2 pb-1 pt-3 text-xs text-slate-500 sm:px-3">
               <span>Marketplace preview listing</span>
-              <button type="button" onClick={toggleSaved} aria-pressed={saved} className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 font-semibold transition ${saved ? "text-rose-600" : "text-slate-600 hover:bg-slate-100"}`}><Heart size={14} fill={saved ? "currentColor" : "none"} /> {saved ? "Saved" : "Save item"}</button>
+              {!isSeller && <button type="button" onClick={toggleSaved} aria-pressed={saved} className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 font-semibold transition ${saved ? "text-rose-600" : "text-slate-600 hover:bg-slate-100"}`}><Heart size={14} fill={saved ? "currentColor" : "none"} /> {saved ? "Saved" : "Save item"}</button>}
             </div>
           </div>
 
@@ -97,7 +98,7 @@ export default function ProductDetailPage() {
               <div className="rounded-xl border border-slate-200/80 bg-white p-3.5"><span className="block text-[10px] font-bold uppercase tracking-[.1em] text-slate-400">Availability</span><span className="mt-1 block text-sm font-semibold text-slate-800">{product.stock} {product.stock === 1 ? "item" : "items"} available</span></div>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center gap-3">
+            {!isSeller ? <div className="mt-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex h-12 items-center rounded-xl border border-slate-200 bg-white p-1">
                 <button type="button" aria-label="Decrease quantity" disabled={quantity <= 1} onClick={() => setQuantity((value) => Math.max(1, value - 1))} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"><Minus size={15} /></button>
                 <span className="w-8 text-center text-sm font-bold text-slate-900" aria-live="polite">{quantity}</span>
@@ -106,7 +107,7 @@ export default function ProductDetailPage() {
               <button type="button" onClick={handleAddToCart} disabled={!product.stock} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-400/30 disabled:cursor-not-allowed disabled:opacity-50"><ShoppingBag size={17} /> Add to cart</button>
               <button type="button" onClick={handleBuyNow} disabled={!product.stock} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/30 disabled:cursor-not-allowed disabled:opacity-50"><ArrowRight size={16} /> Buy now</button>
               <Link to="/cart" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">View cart <ArrowRight size={15} /></Link>
-            </div>
+            </div> : <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-slate-900">Seller view</p><p className="mt-1 text-xs leading-5 text-slate-600">Shopping actions are hidden while you are in your seller account.</p></div><Link to="/seller/dashboard" className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-xs font-bold text-white transition hover:bg-slate-800">Open seller workspace <ArrowRight size={14} /></Link></div>}
 
             <div className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5">
               <div className="flex items-start gap-3">
