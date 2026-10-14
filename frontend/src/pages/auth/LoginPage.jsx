@@ -10,9 +10,12 @@ import FormInput from "../../components/ui/FormInput"
 import AnimatedButton from "../../components/ui/AnimatedButton"
 import { loginSchema } from "../../utils/validators"
 import { isPreviewAuth } from "../../services/auth"
+import { useCart } from "../../contexts/CartContext"
+import { clearPendingPurchase, readPendingPurchase, saveDirectCheckout } from "../../services/purchaseFlow"
 
 const LoginPage = () => {
   const { login } = useAuth()
+  const { addItem } = useCart()
   const navigate = useNavigate()
   const location = useLocation()
   const [isLoading, setIsLoading] = useState(false)
@@ -35,6 +38,19 @@ const LoginPage = () => {
     setIsLoading(false)
     
     if (success) {
+      const pendingPurchase = readPendingPurchase()
+      if (pendingPurchase?.product && pendingPurchase.type === "add-to-cart") {
+        addItem(pendingPurchase.product, pendingPurchase.quantity)
+        clearPendingPurchase()
+        navigate("/cart", { replace: true })
+        return
+      }
+      if (pendingPurchase?.product && pendingPurchase.type === "buy-now") {
+        saveDirectCheckout(pendingPurchase.product, pendingPurchase.quantity)
+        clearPendingPurchase()
+        navigate("/checkout", { replace: true })
+        return
+      }
       navigate(from, { replace: true })
     }
   }

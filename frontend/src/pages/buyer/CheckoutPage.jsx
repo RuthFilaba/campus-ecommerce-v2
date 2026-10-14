@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Banknote, Check, CheckCircle2, CreditCard, MapPin, Phone, ShieldCheck, ShoppingBag } from "lucide-react";
 import { useCart } from "../../contexts/CartContext";
 import { createPreviewOrder } from "../../services/previewOrders";
+import { toCartSummary } from "../../services/previewCart";
+import { clearDirectCheckout, readDirectCheckout } from "../../services/purchaseFlow";
 
 const meetupLocations = [
   "Campus library main entrance",
@@ -42,6 +44,9 @@ function StepIndicator({ activeStep }) {
 
 export default function CheckoutPage() {
   const { cart, clearCart } = useCart();
+  const [directItems] = useState(() => readDirectCheckout());
+  const isDirectPurchase = directItems.length > 0;
+  const checkoutCart = useMemo(() => isDirectPurchase ? toCartSummary(directItems) : cart, [directItems, isDirectPurchase, cart]);
   const [step, setStep] = useState(1);
   const [meetupLocation, setMeetupLocation] = useState("");
   const [meetupNotes, setMeetupNotes] = useState("");
@@ -49,13 +54,14 @@ export default function CheckoutPage() {
   const [order, setOrder] = useState(null);
 
   const placePreviewOrder = () => {
-    const created = createPreviewOrder(cart, { meetupLocation, meetupNotes: meetupNotes.trim(), paymentPreference });
+    const created = createPreviewOrder(checkoutCart, { meetupLocation, meetupNotes: meetupNotes.trim(), paymentPreference });
     setOrder(created);
-    clearCart();
+    if (isDirectPurchase) clearDirectCheckout();
+    else clearCart();
     setStep(3);
   };
 
-  if (!cart.items.length && !order) {
+  if (!checkoutCart.items.length && !order) {
     return <div className="grid min-h-[60vh] place-items-center bg-[#fafaf9] px-5"><div className="max-w-md text-center"><span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-white text-slate-500 shadow-sm"><ShoppingBag size={22} /></span><h1 className="mt-5 text-2xl font-semibold tracking-tight text-slate-900">Your cart is empty</h1><p className="mt-2 text-sm text-slate-500">Add a listing before heading to checkout.</p><Link to="/products" className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800">Explore marketplace <ArrowRight size={15} /></Link></div></div>;
   }
 
@@ -63,7 +69,7 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-[#fafaf9] pb-16">
       <div className="border-b border-slate-200/80 bg-white">
         <div className="container-custom py-7 sm:py-9">
-          <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-slate-400"><Link to="/" className="transition hover:text-slate-700">Home</Link><span>/</span><Link to="/cart" className="transition hover:text-slate-700">Cart</Link><span>/</span><span className="text-slate-700">Checkout</span></nav>
+          <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-slate-400"><Link to="/" className="transition hover:text-slate-700">Home</Link><span>/</span><Link to={isDirectPurchase ? `/products/${directItems[0].product.id}` : "/cart"} className="transition hover:text-slate-700">{isDirectPurchase ? "Listing" : "Cart"}</Link><span>/</span><span className="text-slate-700">Checkout</span></nav>
           <div className="mt-5 flex flex-col justify-between gap-6 sm:flex-row sm:items-end"><div><p className="text-[10px] font-bold uppercase tracking-[.15em] text-amber-700">Secure your campus find</p><h1 className="mt-1 text-3xl font-semibold tracking-[-.05em] text-slate-950">Checkout</h1></div><div className="w-full sm:max-w-[440px]"><StepIndicator activeStep={step} /></div></div>
         </div>
       </div>
@@ -93,11 +99,11 @@ export default function CheckoutPage() {
             </section>
 
             <aside className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6">
-              <h2 className="text-sm font-bold text-slate-900">Order summary <span className="ml-1 font-medium text-slate-400">({cart.count})</span></h2>
-              <ul className="mt-4 max-h-[280px] space-y-4 overflow-y-auto pr-1">{cart.items.map(({ product, quantity }) => <li key={product.id} className="flex gap-3"><div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100"><img src={product.image_url} alt="" className="h-full w-full object-cover" /><span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-slate-900 px-1 text-[9px] font-bold text-white">{quantity}</span></div><div className="min-w-0 flex-1"><p className="line-clamp-2 text-xs font-semibold leading-4 text-slate-800">{product.name}</p><p className="mt-1 text-[10px] text-slate-400">{product.seller_name}</p></div><span className="shrink-0 text-xs font-bold text-slate-800">K{(product.price * quantity).toLocaleString("en-ZM")}</span></li>)}</ul>
+              <h2 className="text-sm font-bold text-slate-900">{isDirectPurchase ? "Buy now summary" : "Order summary"} <span className="ml-1 font-medium text-slate-400">({checkoutCart.count})</span></h2>
+              <ul className="mt-4 max-h-[280px] space-y-4 overflow-y-auto pr-1">{checkoutCart.items.map(({ product, quantity }) => <li key={product.id} className="flex gap-3"><div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100"><img src={product.image_url} alt="" className="h-full w-full object-cover" /><span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-slate-900 px-1 text-[9px] font-bold text-white">{quantity}</span></div><div className="min-w-0 flex-1"><p className="line-clamp-2 text-xs font-semibold leading-4 text-slate-800">{product.name}</p><p className="mt-1 text-[10px] text-slate-400">{product.seller_name}</p></div><span className="shrink-0 text-xs font-bold text-slate-800">K{(Number(product.price) * quantity).toLocaleString("en-ZM")}</span></li>)}</ul>
               <div className="my-4 h-px bg-slate-100" />
-              <div className="space-y-2.5 text-xs"><div className="flex justify-between text-slate-500"><span>Subtotal</span><span className="font-semibold text-slate-800">K{Number(cart.total).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div><div className="flex justify-between text-slate-500"><span>Meetup</span><span className="font-semibold text-slate-800">No delivery fee</span></div></div>
-              <div className="mt-4 flex justify-between border-t border-slate-100 pt-4"><span className="text-sm font-bold text-slate-800">Total</span><span className="text-lg font-bold tracking-tight text-slate-950">K{Number(cart.total).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div>
+              <div className="space-y-2.5 text-xs"><div className="flex justify-between text-slate-500"><span>Subtotal</span><span className="font-semibold text-slate-800">K{Number(checkoutCart.total).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div><div className="flex justify-between text-slate-500"><span>Meetup</span><span className="font-semibold text-slate-800">No delivery fee</span></div></div>
+              <div className="mt-4 flex justify-between border-t border-slate-100 pt-4"><span className="text-sm font-bold text-slate-800">Total</span><span className="text-lg font-bold tracking-tight text-slate-950">K{Number(checkoutCart.total).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div>
             </aside>
           </div>
         ) : (

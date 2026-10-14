@@ -6,6 +6,7 @@ import { useCart } from "../contexts/CartContext";
 import { useAuth } from "../contexts/AuthContext";
 import { getCategoryLabel, getConditionLabel, previewProducts } from "../data/previewProducts";
 import { readPreviewWishlist, writePreviewWishlist } from "../services/previewWishlist";
+import { saveDirectCheckout, savePendingPurchase } from "../services/purchaseFlow";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -42,11 +43,22 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (!isAuthenticated) {
-      navigate("/login", { state: { from: { pathname: location.pathname } } });
+      savePendingPurchase({ type: "add-to-cart", product, quantity });
+      navigate("/login", { state: { from: { pathname: "/cart" } } });
       return;
     }
     addItem(product, quantity);
     toast.success(`${quantity} ${quantity === 1 ? "item" : "items"} added to your cart`);
+  };
+
+  const handleBuyNow = () => {
+    if (!isAuthenticated) {
+      savePendingPurchase({ type: "buy-now", product, quantity });
+      navigate("/login", { state: { from: { pathname: "/checkout" } } });
+      return;
+    }
+    saveDirectCheckout(product, quantity);
+    navigate("/checkout");
   };
 
   return (
@@ -92,6 +104,7 @@ export default function ProductDetailPage() {
                 <button type="button" aria-label="Increase quantity" disabled={quantity >= product.stock} onClick={() => setQuantity((value) => Math.min(product.stock, value + 1))} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"><Plus size={15} /></button>
               </div>
               <button type="button" onClick={handleAddToCart} disabled={!product.stock} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-400/30 disabled:cursor-not-allowed disabled:opacity-50"><ShoppingBag size={17} /> Add to cart</button>
+              <button type="button" onClick={handleBuyNow} disabled={!product.stock} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/30 disabled:cursor-not-allowed disabled:opacity-50"><ArrowRight size={16} /> Buy now</button>
               <Link to="/cart" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">View cart <ArrowRight size={15} /></Link>
             </div>
 
