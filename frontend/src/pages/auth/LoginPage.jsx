@@ -9,6 +9,7 @@ import { useAuth } from "../../contexts/AuthContext"
 import FormInput from "../../components/ui/FormInput"
 import AnimatedButton from "../../components/ui/AnimatedButton"
 import { loginSchema } from "../../utils/validators"
+import { isPreviewAuth } from "../../services/auth"
 
 const LoginPage = () => {
   const { login } = useAuth()
@@ -21,6 +22,7 @@ const LoginPage = () => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
@@ -85,6 +87,29 @@ const LoginPage = () => {
               error={errors.password?.message}
               {...register("password")}
             />
+
+            {isPreviewAuth && (
+              <div className="grid grid-cols-2 gap-2 rounded-xl bg-amber-50 p-3">
+                <p className="col-span-2 text-[11px] font-semibold text-amber-900">Quick preview sign in</p>
+                {[
+                  { label: "Test as buyer", email: "buyer@campusecom.zm" },
+                  { label: "Test as seller", email: "seller@campusecom.zm" },
+                ].map(({ label, email }) => (
+                  <button
+                    key={email}
+                    type="button"
+                    onClick={() => {
+                      setValue("email", email, { shouldValidate: true })
+                      setValue("password", "preview123", { shouldValidate: true })
+                    }}
+                    className="rounded-lg border border-amber-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 transition hover:border-amber-400 hover:text-amber-800"
+                  >
+                    {label}
+                  </button>
+                ))}
+                <p className="col-span-2 text-[10px] text-amber-800">Demo password: preview123</p>
+              </div>
+            )}
 
             <div className="flex items-center justify-between">
               <div className="flex items-center">

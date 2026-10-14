@@ -3,6 +3,7 @@ import api from './api'
 // Preview auth is the default until a backend is ready. Set VITE_AUTH_MODE=api
 // to use the same API contract expected by the production backend.
 const AUTH_MODE = import.meta.env.VITE_AUTH_MODE || 'preview'
+export const isPreviewAuth = AUTH_MODE !== 'api'
 const USERS_KEY = 'campusecom.previewUsers.v1'
 const SESSION_KEY = 'campusecom.previewSession.v1'
 
