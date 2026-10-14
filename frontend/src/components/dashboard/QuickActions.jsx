@@ -14,12 +14,12 @@ const QuickActions = () => {
   return (
     <div>
       <h3 className="font-semibold text-gray-800 dark:text-white mb-3">Quick Actions</h3>
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         {actions.map((action) => (
           <Link
             key={action.name}
             to={action.path}
-            className={`${action.color} rounded-xl p-4 text-center hover:shadow-md transition-all`}
+            className={`${action.color} min-w-0 rounded-xl p-3 text-center transition-all hover:shadow-md sm:p-4`}
           >
             <FontAwesomeIcon icon={action.icon} className="text-xl mb-2" />
             <p className="text-xs font-medium">{action.name}</p>

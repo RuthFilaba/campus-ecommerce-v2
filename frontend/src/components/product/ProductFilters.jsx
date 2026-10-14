@@ -109,7 +109,7 @@ const ProductFilters = ({ filters, onFilterChange, onSearch, categories, onClear
       {isMobileFilterOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setIsMobileFilterOpen(false)} />
-          <div className="absolute right-0 top-0 h-full w-80 bg-white dark:bg-gray-900 shadow-xl p-6 overflow-y-auto">
+          <div className="absolute right-0 top-0 h-full w-full max-w-sm overflow-y-auto bg-white p-5 shadow-xl dark:bg-gray-900 sm:p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold">Filters</h2>
               <button onClick={() => setIsMobileFilterOpen(false)}>

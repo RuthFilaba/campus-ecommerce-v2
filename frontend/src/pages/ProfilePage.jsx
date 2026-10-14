@@ -4,11 +4,10 @@ import { useAuth } from "../contexts/AuthContext"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faUser, faEnvelope, faPhone, faSave, faSpinner } from "@fortawesome/free-solid-svg-icons"
 import Breadcrumb from "../components/common/Breadcrumb"
-import api from "../services/api"
 import toast from "react-hot-toast"
 
 const ProfilePage = () => {
-  const { user } = useAuth()
+  const { user, updateProfile } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -35,7 +34,7 @@ const ProfilePage = () => {
     e.preventDefault()
     setLoading(true)
     try {
-      await api.patch('/users/me/', formData)
+      await updateProfile(formData)
       toast.success("Profile updated successfully!")
     } catch (error) {
       toast.error("Failed to update profile")

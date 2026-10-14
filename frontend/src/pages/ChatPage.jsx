@@ -253,7 +253,7 @@ const ChatPage = () => {
   }
 
   return (
-    <div className="h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
+    <div className="flex h-[calc(100dvh-6.75rem)] min-h-[28rem] min-w-0 flex-col overflow-hidden bg-gray-100 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow-md py-4 px-6">
         {selectedThread ? (
@@ -298,7 +298,7 @@ const ChatPage = () => {
         )}
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
         {/* Threads Sidebar */}
         <div className={`${selectedThread ? "hidden md:flex" : "flex"} w-full md:w-80 bg-white dark:bg-gray-800 border-r flex-col`}>
           <div className="p-4 border-b">

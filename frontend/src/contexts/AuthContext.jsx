@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react'
-import { login as loginAPI, register as registerAPI, getCurrentUser, clearPreviewSession } from '../services/auth'
+import { login as loginAPI, register as registerAPI, getCurrentUser, updateProfile as updateProfileAPI, clearPreviewSession } from '../services/auth'
 import toast from 'react-hot-toast'
 
 const AuthContext = createContext()
@@ -23,6 +23,19 @@ export const AuthProvider = ({ children }) => {
     } else {
       setLoading(false)
     }
+  }, [])
+
+  useEffect(() => {
+    const syncSession = (event) => {
+      if (event.key && !['access_token', 'refresh_token', 'campusecom.previewSession.v1'].includes(event.key)) return
+      if (!localStorage.getItem('access_token') && !localStorage.getItem('campusecom.previewSession.v1')) {
+        setUser(null)
+        return
+      }
+      loadUser()
+    }
+    window.addEventListener('storage', syncSession)
+    return () => window.removeEventListener('storage', syncSession)
   }, [])
 
   const loadUser = async () => {
@@ -96,6 +109,13 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const updateProfile = async (profileData) => {
+    const response = await updateProfileAPI(profileData)
+    const currentUser = response.user || response
+    setUser(currentUser)
+    return currentUser
+  }
+
   const logout = () => {
     clearPreviewSession()
     localStorage.removeItem('access_token')
@@ -109,6 +129,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     register,
+    updateProfile,
     logout,
     isAuthenticated: !!user,
     isBuyer: user?.role === 'buyer',

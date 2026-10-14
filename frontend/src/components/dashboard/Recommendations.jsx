@@ -33,7 +33,7 @@ const Recommendations = () => {
         <Link to="/products" className="text-amber-500 text-sm hover:underline">View All</Link>
       </div>
 
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 xl:grid-cols-5">
         {recommendations.map((product) => (
           <Link key={product.id} to={`/products/${product.id}`} className="bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm hover:shadow-md transition-all group">
             <div className="relative">

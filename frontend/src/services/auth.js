@@ -87,6 +87,25 @@ export const clearPreviewSession = () => {
 }
 
 export const updateProfile = async (data) => {
+  if (AUTH_MODE !== 'api') {
+    const currentUser = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null')
+    if (!currentUser) throw new Error('Preview session has expired')
+    const updatedUser = {
+      ...currentUser,
+      ...data,
+      first_name: data.first_name?.trim() ?? currentUser.first_name,
+      last_name: data.last_name?.trim() ?? currentUser.last_name,
+    }
+    updatedUser.full_name = `${updatedUser.first_name || ''} ${updatedUser.last_name || ''}`.trim()
+    localStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser))
+    const users = readUsers()
+    const userExists = users.some((user) => user.email === updatedUser.email)
+    const nextUsers = userExists
+      ? users.map((user) => user.email === updatedUser.email ? updatedUser : user)
+      : [updatedUser, ...users]
+    localStorage.setItem(USERS_KEY, JSON.stringify(nextUsers))
+    return { user: updatedUser }
+  }
   const response = await api.patch('/users/me/', data)
   return response.data
 }

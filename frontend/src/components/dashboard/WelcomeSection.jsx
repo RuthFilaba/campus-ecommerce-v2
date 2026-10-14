@@ -12,7 +12,7 @@ const WelcomeSection = () => {
       </h2>
       <p className="text-gray-500 mt-1">Discover something new today</p>
       
-      <div className="grid grid-cols-3 gap-4 mt-4">
+      <div className="grid grid-cols-1 gap-3 mt-4 sm:grid-cols-3 sm:gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl p-3 text-center shadow-sm">
           <p className="text-2xl font-bold text-amber-500">8</p>
           <p className="text-xs text-gray-500">Recently Viewed</p>
