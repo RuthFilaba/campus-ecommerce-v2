@@ -94,7 +94,6 @@ export default function Navbar() {
               {sellerLinks.map(({ to, label }) => <Link key={to} to={to} aria-current={active(to) ? "page" : undefined} className={navLinkClass(to)}>{label}{to === "/seller/orders" && sellerOrderCount > 0 && <span className="ml-1.5 inline-grid h-5 min-w-5 place-items-center rounded-full bg-amber-100 px-1 text-[10px] font-bold text-amber-800">{sellerOrderCount > 9 ? "9+" : sellerOrderCount}</span>}</Link>)}
             </nav>
           ) : null}
-          {isSeller && <Link to="/seller/products/create" aria-label="Add a product listing" title="Add a listing" className="hidden h-9 items-center justify-center gap-1.5 rounded-lg bg-slate-950 px-2.5 text-xs font-bold text-white transition hover:bg-slate-800 lg:inline-flex xl:px-3"><Plus size={15} /><span className="hidden 2xl:inline">Add listing</span></Link>}
           {!isSeller && (
             <nav aria-label="Marketplace navigation" className="hidden items-center gap-7 lg:flex">
               <Link to="/products" aria-current={active("/products") ? "page" : undefined} className={navLinkClass("/products")}>Explore</Link>
@@ -103,6 +102,7 @@ export default function Navbar() {
           )}
 
           <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+            {isSeller && <Link to="/seller/products/create" aria-label="Add a product listing" title="Add a listing" className="hidden h-10 items-center justify-center gap-1.5 rounded-xl bg-slate-950 px-3 text-xs font-bold text-white transition hover:bg-slate-800 lg:inline-flex"><Plus size={16} /><span className="hidden xl:inline">Add listing</span></Link>}
             {isAuthenticated && !isSeller && <Link to="/wishlist" aria-label="Wishlist" className="hidden h-10 w-10 place-items-center rounded-xl text-slate-600 transition hover:bg-slate-100 hover:text-amber-600 sm:grid"><Heart size={19} strokeWidth={1.8} /></Link>}
             {isAuthenticated && !isSeller && <Link to="/cart" aria-label={`Cart${cartCount ? `, ${cartCount} items` : ""}`} className="relative grid h-10 w-10 place-items-center rounded-xl text-slate-600 transition hover:bg-slate-100 hover:text-amber-600"><ShoppingCart size={19} strokeWidth={1.8} />{cartCount > 0 && <span className="absolute right-0.5 top-0.5 grid h-[17px] min-w-[17px] place-items-center rounded-full bg-amber-500 px-1 text-[10px] font-bold leading-none text-white">{cartCount > 99 ? "99+" : cartCount}</span>}</Link>}
             {isAuthenticated ? (
