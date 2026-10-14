@@ -33,7 +33,7 @@ export default function OrdersPage() {
             {orders.map((order) => (
               <li key={order.id} className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/70 px-4 py-4 sm:px-6">
-                  <div><p className="font-mono text-xs font-bold text-slate-900">{order.id}</p><p className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500"><Clock3 size={12} />{new Date(order.createdAt).toLocaleString("en-ZM", { dateStyle: "medium", timeStyle: "short" })}</p></div>
+                  <div><Link to={`/orders/${order.id}`} className="font-mono text-xs font-bold text-slate-900 transition hover:text-amber-700">{order.id} <span aria-hidden="true">→</span></Link><p className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500"><Clock3 size={12} />{new Date(order.createdAt).toLocaleString("en-ZM", { dateStyle: "medium", timeStyle: "short" })}</p></div>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-[10px] font-bold text-amber-800"><PackageCheck size={13} />{order.status}</span>
                 </div>
                 <div className="divide-y divide-slate-100 px-4 sm:px-6">

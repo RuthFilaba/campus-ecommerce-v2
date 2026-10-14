@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  ArrowRight, Heart, LogOut, Menu, MessageCircle, Search, ShoppingBag,
+  ArrowRight, ClipboardList, Heart, LogOut, Menu, MessageCircle, Search, ShoppingBag,
   ShoppingCart, Store, UserRound, X,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
@@ -85,6 +85,7 @@ export default function Navbar() {
             {isAuthenticated ? (
               <div className="hidden items-center gap-1 sm:flex">
                 {isSeller && <Link to="/seller/dashboard" aria-label="Seller dashboard" className="grid h-10 w-10 place-items-center rounded-xl text-slate-600 transition hover:bg-slate-100 hover:text-amber-600"><Store size={18} /></Link>}
+                <Link to="/orders" aria-label="Order history" className="grid h-10 w-10 place-items-center rounded-xl text-slate-600 transition hover:bg-slate-100 hover:text-amber-600"><ClipboardList size={18} /></Link>
                 <Link to="/messages" aria-label="Messages" className="grid h-10 w-10 place-items-center rounded-xl text-slate-600 transition hover:bg-slate-100 hover:text-amber-600"><MessageCircle size={18} /></Link>
                 <Link to="/profile" className="ml-1 inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 px-3 text-[13px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">
                   <UserRound size={16} />
@@ -120,6 +121,7 @@ export default function Navbar() {
               {isAuthenticated ? (
                 <>
                   <Link to="/profile" onClick={closeMobile} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><UserRound size={17} /> My account</Link>
+                  <Link to="/orders" onClick={closeMobile} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><ClipboardList size={17} /> Order history</Link>
                   <button type="button" onClick={() => { logout(); closeMobile(); navigate("/"); }} className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50"><LogOut size={17} /> Log out</button>
                 </>
               ) : (
