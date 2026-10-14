@@ -7,6 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { getCategoryLabel, getConditionLabel, previewProducts } from "../data/previewProducts";
 import { readPreviewWishlist, writePreviewWishlist } from "../services/previewWishlist";
 import { saveDirectCheckout, savePendingPurchase } from "../services/purchaseFlow";
+import PremiumBreadcrumb from "../components/common/PremiumBreadcrumb";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -65,9 +66,7 @@ export default function ProductDetailPage() {
   return (
     <div className="min-h-screen bg-[#fafaf9] pb-16">
       <div className="container-custom pt-6 sm:pt-8">
-        <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-400">
-          <Link to="/" className="transition hover:text-slate-700">Home</Link><span>/</span><Link to="/products" className="transition hover:text-slate-700">Marketplace</Link><span>/</span><Link to={`/products?category=${product.category}`} className="transition hover:text-slate-700">{getCategoryLabel(product.category)}</Link>
-        </nav>
+        <PremiumBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Marketplace", to: "/products" }, { label: getCategoryLabel(product.category), to: `/products?category=${product.category}` }, { label: product.name }]} />
 
         <div className="mt-5 grid gap-7 lg:grid-cols-[minmax(0,1.05fr)_minmax(400px,.95fr)] lg:gap-12">
           <div className="overflow-hidden rounded-[24px] border border-slate-200/80 bg-white p-2.5 sm:rounded-[28px] sm:p-3">

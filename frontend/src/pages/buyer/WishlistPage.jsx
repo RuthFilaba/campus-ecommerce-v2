@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Heart, Trash2 } from "lucide-react";
 import { getCategoryLabel, getConditionLabel, previewProducts } from "../../data/previewProducts";
 import { readPreviewWishlist, writePreviewWishlist } from "../../services/previewWishlist";
+import PremiumBreadcrumb from "../../components/common/PremiumBreadcrumb";
 
 export default function WishlistPage() {
   const [savedIds, setSavedIds] = useState(() => readPreviewWishlist());
@@ -17,7 +18,7 @@ export default function WishlistPage() {
   return (
     <div className="min-h-screen bg-[#fafaf9] pb-16">
       <div className="container-custom pt-8 sm:pt-10">
-        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-slate-400"><Link to="/" className="transition hover:text-slate-700">Home</Link><span>/</span><span className="text-slate-700">Saved items</span></nav>
+        <PremiumBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Saved items" }]} />
         <div className="mt-5 flex items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.15em] text-amber-700">Keep the good ones close</p><h1 className="mt-1 text-3xl font-semibold tracking-[-.05em] text-slate-950">Your wishlist<span className="ml-2 align-middle text-base font-medium tracking-normal text-slate-400">({savedProducts.length})</span></h1></div><Heart size={23} className="mb-1 text-rose-500" /></div>
 
         {savedProducts.length ? (

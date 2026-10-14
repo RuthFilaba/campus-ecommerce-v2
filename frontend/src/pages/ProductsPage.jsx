@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowDownUp, ArrowRight, ChevronDown, Filter, Search, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { categories, getCategoryLabel, getConditionLabel, previewProducts } from "../data/previewProducts";
+import PremiumBreadcrumb from "../components/common/PremiumBreadcrumb";
 
 const conditions = [
   { id: "new", label: "New" },
@@ -112,9 +113,7 @@ export default function ProductsPage() {
     <div className="min-h-screen bg-[#fafaf9] pb-16">
       <div className="border-b border-slate-200/80 bg-white">
         <div className="container-custom py-8 sm:py-10">
-          <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-400">
-            <Link to="/" className="transition hover:text-slate-700">Home</Link><span>/</span><span className="text-slate-700">Marketplace</span>
-          </div>
+          <PremiumBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Marketplace" }]} />
           <div className="mt-5 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
             <div>
               <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.12em] text-amber-700"><Sparkles size={12} /> Marketplace preview</div>

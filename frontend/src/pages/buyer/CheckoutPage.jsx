@@ -5,6 +5,7 @@ import { useCart } from "../../contexts/CartContext";
 import { createPreviewOrder } from "../../services/previewOrders";
 import { toCartSummary } from "../../services/previewCart";
 import { clearDirectCheckout, readDirectCheckout } from "../../services/purchaseFlow";
+import PremiumBreadcrumb from "../../components/common/PremiumBreadcrumb";
 
 const meetupLocations = [
   "Campus library main entrance",
@@ -69,7 +70,7 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-[#fafaf9] pb-16">
       <div className="border-b border-slate-200/80 bg-white">
         <div className="container-custom py-7 sm:py-9">
-          <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-slate-400"><Link to="/" className="transition hover:text-slate-700">Home</Link><span>/</span><Link to={isDirectPurchase ? `/products/${directItems[0].product.id}` : "/cart"} className="transition hover:text-slate-700">{isDirectPurchase ? "Listing" : "Cart"}</Link><span>/</span><span className="text-slate-700">Checkout</span></nav>
+          <PremiumBreadcrumb items={[{ label: "Home", to: "/" }, { label: isDirectPurchase ? "Listing" : "Cart", to: isDirectPurchase ? `/products/${directItems[0].product.id}` : "/cart" }, { label: "Checkout" }]} />
           <div className="mt-5 flex flex-col justify-between gap-6 sm:flex-row sm:items-end"><div><p className="text-[10px] font-bold uppercase tracking-[.15em] text-amber-700">Secure your campus find</p><h1 className="mt-1 text-3xl font-semibold tracking-[-.05em] text-slate-950">Checkout</h1></div><div className="w-full sm:max-w-[440px]"><StepIndicator activeStep={step} /></div></div>
         </div>
       </div>

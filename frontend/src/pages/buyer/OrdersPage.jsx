@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Clock3, MapPin, PackageCheck, ShoppingBag } from "lucide-react";
 import { readPreviewOrders } from "../../services/previewOrders";
+import PremiumBreadcrumb from "../../components/common/PremiumBreadcrumb";
 
 const paymentLabels = {
   "meetup-cash": "Cash at meetup",
@@ -15,7 +16,7 @@ export default function OrdersPage() {
   return (
     <div className="min-h-screen bg-[#fafaf9] pb-16">
       <div className="container-custom pt-8 sm:pt-10">
-        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-slate-400"><Link to="/" className="transition hover:text-slate-700">Home</Link><span>/</span><span className="text-slate-700">Order history</span></nav>
+        <PremiumBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Order history" }]} />
         <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
           <div><p className="text-[10px] font-bold uppercase tracking-[.15em] text-amber-700">Your campus purchases</p><h1 className="mt-1 text-3xl font-semibold tracking-[-.05em] text-slate-950">Order history</h1><p className="mt-2 text-sm text-slate-500">Review the order previews saved on this device.</p></div>
           <Link to="/products" className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 transition hover:text-amber-700">Explore marketplace <ArrowRight size={15} /></Link>

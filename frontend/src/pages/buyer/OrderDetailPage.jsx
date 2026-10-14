@@ -18,6 +18,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import toast from "react-hot-toast";
 import { readPreviewOrders } from "../../services/previewOrders";
+import PremiumBreadcrumb from "../../components/common/PremiumBreadcrumb";
 
 const OrderDetailPage = () => {
   const { id } = useParams();
@@ -118,7 +119,7 @@ const OrderDetailPage = () => {
     return (
       <div className="min-h-screen bg-[#fafaf9] pb-16">
         <div className="container-custom max-w-4xl pt-8 sm:pt-10">
-          <Link to="/orders" className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 transition hover:text-amber-700"><FontAwesomeIcon icon={faArrowLeft} /> Order history</Link>
+          <PremiumBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Order history", to: "/orders" }, { label: `Order ${order.id}` }]} />
           <div className="mt-5 rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-7">
             <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-5"><div><p className="text-[10px] font-bold uppercase tracking-[.15em] text-amber-700">Preview order</p><h1 className="mt-1 font-mono text-xl font-bold text-slate-950">{order.id}</h1><p className="mt-2 text-xs text-slate-500">Placed {new Date(order.createdAt).toLocaleString("en-ZM", { dateStyle: "medium", timeStyle: "short" })}</p></div><span className="rounded-full bg-amber-50 px-3 py-1.5 text-[11px] font-bold text-amber-800">{order.status}</span></div>
             <h2 className="mt-5 text-sm font-bold text-slate-900">Items</h2>

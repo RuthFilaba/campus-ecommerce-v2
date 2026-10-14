@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Minus, Plus, ShieldCheck, ShoppingBag, Trash2 } from "lucide-react";
 import { useCart } from "../../contexts/CartContext";
 import { clearDirectCheckout } from "../../services/purchaseFlow";
+import PremiumBreadcrumb from "../../components/common/PremiumBreadcrumb";
 
 export default function CartPage() {
   const { cart, updateQuantity, removeItem } = useCart();
@@ -23,7 +24,7 @@ export default function CartPage() {
   return (
     <div className="min-h-screen bg-[#fafaf9] pb-16">
       <div className="container-custom pt-8 sm:pt-10">
-        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-slate-400"><Link to="/" className="transition hover:text-slate-700">Home</Link><span>/</span><span className="text-slate-700">Your cart</span></nav>
+        <PremiumBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Your cart" }]} />
         <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
           <div><p className="text-[10px] font-bold uppercase tracking-[.15em] text-amber-700">Almost yours</p><h1 className="mt-1 text-3xl font-semibold tracking-[-.05em] text-slate-950">Your cart<span className="ml-2 align-middle text-base font-medium tracking-normal text-slate-400">({cart.count})</span></h1></div>
           <Link to="/products" className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 transition hover:text-amber-700"><ArrowLeft size={15} /> Continue exploring</Link>
