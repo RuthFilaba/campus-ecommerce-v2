@@ -31,7 +31,7 @@ export default function Footer() {
                 <li><Link to="/products" className="transition hover:text-white">Explore products</Link></li>
                 <li><Link to="/products?category=academic" className="transition hover:text-white">Academic</Link></li>
                 <li><Link to="/products?category=tech-mobile" className="transition hover:text-white">Tech & mobile</Link></li>
-                {!isAuthenticated && <li><Link to="/register?role=seller" className="inline-flex items-center gap-1 transition hover:text-white">Start selling <ArrowUpRight size={13} /></Link>}
+                {!isAuthenticated && <li><Link to="/register?role=seller" className="inline-flex items-center gap-1 transition hover:text-white">Start selling <ArrowUpRight size={13} /></Link></li>}
               </>}
             </ul>
           </div>
