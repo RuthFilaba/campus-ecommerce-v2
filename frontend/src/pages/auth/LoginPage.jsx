@@ -16,7 +16,7 @@ const LoginPage = () => {
   const location = useLocation()
   const [isLoading, setIsLoading] = useState(false)
   
-  const from = location.state?.from?.pathname || "/dashboard"
+  const from = location.state?.from?.pathname || "/"
 
   const {
     register,
@@ -24,6 +24,7 @@ const LoginPage = () => {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
+    defaultValues: { email: location.state?.email || "" },
   })
 
   const onSubmit = async (data) => {
@@ -78,7 +79,7 @@ const LoginPage = () => {
             <FormInput
               label="Password"
               type="password"
-              placeholder="••••••••"
+              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
               icon={faLock}
               required
               error={errors.password?.message}
@@ -138,15 +139,15 @@ const LoginPage = () => {
           </div>
         </motion.div>
 
-        {/* Demo Credentials */}
+        {/* Preview sign-in guidance */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
           className="text-center text-xs text-gray-500 dark:text-gray-400"
         >
-          <p>Demo Credentials:</p>
-          <p>Email: demo@campusecom.zm | Password: demo123</p>
+          <p>Preview sign in is enabled. Use any valid email and password.</p>
+          <p>No database connection is required; preview passwords are not saved.</p>
         </motion.div>
       </motion.div>
     </div>
