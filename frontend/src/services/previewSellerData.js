@@ -25,7 +25,7 @@ export function readAllPreviewSellerProducts() {
   return readAllProducts().map((product) => {
     const ownerEmail = product.owner_email || "";
     const settings = readPreviewSellerSettings(ownerEmail, ownerEmail.split("@")[0]);
-    const categoryMap = { books: "academic", electronics: "tech-mobile", clothing: "fashion", sports: "marketplace", furniture: "marketplace", beauty: "marketplace", other: "marketplace" };
+    const categoryMap = { books: "academic", electronics: "tech-mobile", clothing: "fashion", food: "food", sports: "marketplace", furniture: "marketplace", beauty: "marketplace", other: "marketplace" };
     return {
       ...product,
       category: categoryMap[product.category] || product.category,
@@ -110,6 +110,24 @@ export function readPreviewSellerOrders(ownerEmail) {
     const items = (order.items || []).filter(({ product }) => product?.owner_email === normalizedEmail);
     if (!items.length) return [];
     const subtotal = items.reduce((sum, { product, quantity }) => sum + Number(product.price || 0) * Number(quantity || 0), 0);
-    return [{ ...order, items, sellerSubtotal: subtotal }];
+    return [{ ...order, status: order.sellerStatuses?.[normalizedEmail] || order.status, items, sellerSubtotal: subtotal }];
   });
+}
+
+export function updatePreviewSellerOrderStatus(ownerEmail, orderId, status) {
+  if (!ownerEmail) return false;
+  const normalizedEmail = ownerEmail.toLowerCase();
+  const orders = (() => {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(ORDERS_KEY) || "[]");
+      return Array.isArray(stored) ? stored : [];
+    } catch {
+      return [];
+    }
+  })();
+  const order = orders.find((candidate) => String(candidate.id) === String(orderId));
+  if (!order || !(order.items || []).some(({ product }) => product?.owner_email === normalizedEmail)) return false;
+  order.sellerStatuses = { ...(order.sellerStatuses || {}), [normalizedEmail]: status };
+  window.localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+  return true;
 }

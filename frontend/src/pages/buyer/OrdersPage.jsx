@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Clock3, MapPin, PackageCheck, ShoppingBag } from "lucide-react";
-import { readPreviewOrders } from "../../services/previewOrders";
+import { getPreviewBuyerOrderStatus, readPreviewOrders } from "../../services/previewOrders";
 import PremiumBreadcrumb from "../../components/common/PremiumBreadcrumb";
 import { getProductPrimaryImage } from "../../utils/productImages";
 
@@ -36,7 +36,7 @@ export default function OrdersPage() {
               <li key={order.id} className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/70 px-4 py-4 sm:px-6">
                   <div><Link to={`/orders/${order.id}`} className="font-mono text-xs font-bold text-slate-900 transition hover:text-amber-700">{order.id} <span aria-hidden="true">→</span></Link><p className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500"><Clock3 size={12} />{new Date(order.createdAt).toLocaleString("en-ZM", { dateStyle: "medium", timeStyle: "short" })}</p></div>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-[10px] font-bold text-amber-800"><PackageCheck size={13} />{order.status}</span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-[10px] font-bold text-amber-800"><PackageCheck size={13} />{getPreviewBuyerOrderStatus(order)}</span>
                 </div>
                 <div className="divide-y divide-slate-100 px-4 sm:px-6">
                   {order.items.map(({ product, quantity }, index) => <div key={`${order.id}-${product.id}-${index}`} className="flex items-center gap-3 py-4"><div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100"><img src={getProductPrimaryImage(product)} alt="" className="h-full w-full object-cover" /></div><div className="min-w-0 flex-1"><Link to={`/products/${product.id}`} className="line-clamp-2 text-sm font-semibold text-slate-900 transition hover:text-amber-700">{product.name}</Link><p className="mt-1 text-xs text-slate-500">{product.seller_name} · Qty {quantity}</p></div><span className="shrink-0 text-sm font-bold text-slate-900">K{(Number(product.price) * quantity).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div>)}
@@ -49,7 +49,7 @@ export default function OrdersPage() {
             ))}
           </ul>
         )}
-        <p className="mt-5 text-center text-[11px] text-slate-400">Preview order history is stored locally on this device. Seller updates will be available after backend integration.</p>
+        <p className="mt-5 text-center text-[11px] text-slate-400">Preview order history and seller status updates are stored locally on this device.</p>
       </div>
     </div>
   );

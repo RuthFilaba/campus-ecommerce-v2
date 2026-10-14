@@ -1,20 +1,31 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, BarChart3, ClipboardList, Package } from "lucide-react";
+import { ArrowRight, BarChart3, Check, ClipboardList, Package, X } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { readPreviewSellerOrders } from "../../services/previewSellerData";
+import { readPreviewSellerOrders, updatePreviewSellerOrderStatus } from "../../services/previewSellerData";
 import { getProductPrimaryImage } from "../../utils/productImages";
+import toast from "react-hot-toast";
 
 export default function SellerPreviewActivityPage({ kind }) {
   const { user } = useAuth();
-  const sellerOrders = readPreviewSellerOrders(user?.email);
+  const [sellerOrders, setSellerOrders] = useState(() => readPreviewSellerOrders(user?.email));
   const isOrders = kind === "orders";
   const visibleOrders = isOrders ? sellerOrders : sellerOrders.filter((order) => String(order.status).toLowerCase() === "completed");
   const revenue = visibleOrders.reduce((sum, order) => sum + Number(order.sellerSubtotal || 0), 0);
   const Icon = isOrders ? ClipboardList : BarChart3;
   const title = isOrders ? "Orders" : "Sales";
   const description = isOrders
-    ? "New buyer orders will appear here when the marketplace backend is connected."
-    : "Completed orders and sales performance will appear here after backend connection.";
+    ? "Buyer orders that include your listings are collected here for fulfillment."
+    : "Completed preview orders appear here after you mark them fulfilled.";
+
+  const setOrderStatus = (order, status) => {
+    if (!updatePreviewSellerOrderStatus(user?.email, order.id, status)) {
+      toast.error("Could not update this order");
+      return;
+    }
+    setSellerOrders(readPreviewSellerOrders(user?.email));
+    toast.success(`Order marked ${status.toLowerCase()}`);
+  };
 
   return (
     <div className="min-h-screen bg-[#fafaf9] pb-16">
@@ -31,7 +42,7 @@ export default function SellerPreviewActivityPage({ kind }) {
               <article key={order.id} className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div><p className="font-mono text-xs font-bold text-slate-900">{order.id}</p><p className="mt-1 text-[11px] text-slate-500">{new Date(order.createdAt).toLocaleString("en-ZM", { dateStyle: "medium", timeStyle: "short" })} · Preview buyer</p></div>
-                  <span className="rounded-full bg-amber-50 px-3 py-1.5 text-[10px] font-bold text-amber-800">{order.status}</span>
+                  <span className={`rounded-full px-3 py-1.5 text-[10px] font-bold ${order.status === "Completed" ? "bg-emerald-50 text-emerald-800" : order.status === "Cancelled" ? "bg-rose-50 text-rose-700" : "bg-amber-50 text-amber-800"}`}>{order.status}</span>
                 </div>
                 <ul className="mt-4 divide-y divide-slate-100 border-y border-slate-100">
                   {order.items.map(({ product, quantity }, index) => (
@@ -42,6 +53,7 @@ export default function SellerPreviewActivityPage({ kind }) {
                   ))}
                 </ul>
                 <div className="mt-3 flex flex-wrap justify-between gap-2 text-xs"><span className="text-slate-500">Meetup: {order.meetupLocation}</span><span className="font-bold text-slate-900">{isOrders ? "Order total" : "Sale total"} K{Number(order.sellerSubtotal).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div>
+                {isOrders && order.status !== "Completed" && order.status !== "Cancelled" && <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-3">{order.status.toLowerCase().includes("pending") && <button type="button" onClick={() => setOrderStatus(order, "Confirmed")} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-950 px-3 text-xs font-semibold text-white transition hover:bg-slate-800"><Check size={14} /> Confirm order</button>}<button type="button" onClick={() => setOrderStatus(order, "Completed")} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-emerald-200 px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-50"><Check size={14} /> Mark completed</button><button type="button" onClick={() => setOrderStatus(order, "Cancelled")} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-rose-200 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-50"><X size={14} /> Cancel</button></div>}
               </article>
             ))}
           </section>

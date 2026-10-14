@@ -9,6 +9,18 @@ export function readPreviewOrders() {
   }
 }
 
+export function getPreviewBuyerOrderStatus(order) {
+  const sellerEmails = [...new Set((order?.items || []).map(({ product }) => product?.owner_email).filter(Boolean))];
+  if (!sellerEmails.length) return order?.status || "Pending seller confirmation";
+  const statuses = sellerEmails.map((email) => order.sellerStatuses?.[email] || order.status);
+  const normalized = statuses.map((status) => String(status).toLowerCase());
+  if (normalized.every((status) => status === "completed")) return "Completed";
+  if (normalized.every((status) => status === "cancelled")) return "Cancelled";
+  if (normalized.some((status) => status === "cancelled")) return "Partially cancelled";
+  if (normalized.some((status) => status === "confirmed" || status === "completed")) return "Seller confirmed";
+  return order.status;
+}
+
 export function createPreviewOrder(cart, details) {
   const orders = readPreviewOrders();
   const now = new Date();
