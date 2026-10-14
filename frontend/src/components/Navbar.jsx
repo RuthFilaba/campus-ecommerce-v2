@@ -123,7 +123,6 @@ export default function Navbar() {
           {!isSeller && <form onSubmit={submitSearch} role="search" className="relative mb-3 md:hidden"><Search aria-hidden="true" size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search the marketplace" aria-label="Search products" className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" /></form>}
           <nav aria-label={isSeller ? "Seller workspace mobile navigation" : "Marketplace mobile navigation"} className="grid gap-1">
             {isSeller ? <>
-              <Link to="/seller/products/create" onClick={closeMobile} className="mb-2 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 text-sm font-bold text-white transition hover:bg-slate-800"><Plus size={16} /> Add a product listing</Link>
               <div className="grid grid-cols-2 gap-1">
                 <Link to="/seller/dashboard" onClick={closeMobile} aria-current={active("/seller/dashboard") ? "page" : undefined} className={mobileLinkClass("/seller/dashboard")}><Store size={17} /> Overview</Link>
                 <Link to="/seller/products" onClick={closeMobile} aria-current={active("/seller/products") ? "page" : undefined} className={mobileLinkClass("/seller/products")}><Package size={17} /> Listings</Link>
