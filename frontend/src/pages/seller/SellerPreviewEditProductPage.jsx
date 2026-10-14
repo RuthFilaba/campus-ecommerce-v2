@@ -4,6 +4,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "../../contexts/AuthContext";
 import { readPreviewSellerProducts, updatePreviewSellerProduct } from "../../services/previewSellerData";
+import { getProductImages } from "../../utils/productImages";
 
 export default function SellerPreviewEditProductPage() {
   const { id } = useParams();
@@ -27,6 +28,7 @@ export default function SellerPreviewEditProductPage() {
       <div className="container-custom max-w-3xl pt-8 sm:pt-10">
         <Link to="/seller/products" className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 transition hover:text-slate-900"><ArrowLeft size={14} /> Back to listings</Link>
         <div className="mt-5 rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-7"><p className="text-[10px] font-bold uppercase tracking-[.15em] text-amber-700">Seller workspace</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Edit listing</h1><p className="mt-1 text-sm text-slate-500">Update the details students see in your listing.</p>
+          {getProductImages(product).length > 0 && <div className="mt-6 flex gap-3 overflow-x-auto">{getProductImages(product).map((image, index) => <img key={`${product.id}-saved-image-${index}`} src={image} alt={`${product.name} image ${index + 1}`} className="h-20 w-20 shrink-0 rounded-xl border border-slate-200 object-cover" />)}</div>}
           <form onSubmit={save} className="mt-6 space-y-5">
             <label className="block"><span className="mb-2 block text-xs font-bold text-slate-700">Listing name</span><input name="name" value={form.name} onChange={updateField} maxLength={100} required className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" /></label>
             <label className="block"><span className="mb-2 block text-xs font-bold text-slate-700">Description</span><textarea name="description" value={form.description} onChange={updateField} rows={4} required className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm leading-6 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" /></label>

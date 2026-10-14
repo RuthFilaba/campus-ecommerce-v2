@@ -16,6 +16,7 @@ import {
 import api from "../services/api"
 import { useAuth } from "../contexts/AuthContext"
 import toast from "react-hot-toast"
+import { getProductPrimaryImage } from "../utils/productImages"
 
 const SellerProductsPage = () => {
   const [products, setProducts] = useState([])
@@ -180,7 +181,7 @@ const SellerProductsPage = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <img 
-                            src={product.image_1 || product.image_url || `https://placehold.co/60x60`} 
+                            src={getProductPrimaryImage(product, `https://placehold.co/60x60`)}
                             alt={product.name}
                             className="w-12 h-12 object-cover rounded"
                           />

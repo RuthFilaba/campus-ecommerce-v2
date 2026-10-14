@@ -5,6 +5,7 @@ import { categories, getCategoryLabel, getConditionLabel, previewProducts } from
 import PremiumBreadcrumb from "../components/common/PremiumBreadcrumb";
 import { isPreviewAuth } from "../services/auth";
 import { readAllPreviewSellerProducts } from "../services/previewSellerData";
+import { getProductPrimaryImage } from "../utils/productImages";
 
 const conditions = [
   { id: "new", label: "New" },
@@ -32,7 +33,7 @@ function PreviewProductCard({ product }) {
           {imageFailed ? (
             <div className="grid h-full place-items-center bg-gradient-to-br from-amber-50 via-orange-50 to-slate-100 text-5xl font-bold text-amber-300">{product.name.charAt(0)}</div>
           ) : (
-            <img src={product.image_url} alt={product.name} loading="lazy" onError={() => setImageFailed(true)} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.045]" />
+            <img src={getProductPrimaryImage(product)} alt={product.name} loading="lazy" onError={() => setImageFailed(true)} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.045]" />
           )}
           <span className="absolute left-3 top-3 rounded-full border border-white/70 bg-white/90 px-2.5 py-1 text-[10px] font-bold text-slate-700 shadow-sm backdrop-blur">{condition}</span>
           {product.stock === 1 && <span className="absolute bottom-3 left-3 rounded-full bg-slate-950/80 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur">One available</span>}

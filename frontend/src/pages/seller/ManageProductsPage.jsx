@@ -21,6 +21,7 @@ import {
 import toast from "react-hot-toast";
 import { isPreviewAuth } from "../../services/auth";
 import { deletePreviewSellerProduct, readPreviewSellerProducts } from "../../services/previewSellerData";
+import { getProductPrimaryImage } from "../../utils/productImages";
 
 const ManageProductsPage = () => {
   const { user, isAuthenticated } = useAuth();
@@ -201,10 +202,7 @@ const ManageProductsPage = () => {
               const isLowStock = product.stock <= 5 && product.stock > 0;
               const isOutOfStock = product.stock === 0;
 
-              const productImage =
-                product.image_1 ||
-                product.image_url ||
-                `https://placehold.co/64x64/e5e7eb/9ca3af?text=${product.name?.charAt(0) || "P"}`;
+              const productImage = getProductPrimaryImage(product, `https://placehold.co/64x64/e5e7eb/9ca3af?text=${product.name?.charAt(0) || "P"}`);
 
               return (
                 <div

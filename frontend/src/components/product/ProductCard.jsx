@@ -5,6 +5,7 @@ import { useState } from "react"
 import { useAuth } from "../../contexts/AuthContext"
 import api from "../../services/api"
 import toast from "react-hot-toast"
+import { getProductImages } from "../../utils/productImages"
 
 const ProductCard = ({ product, onAddToCart, onAddToWishlist, onEdit, onDelete, isOwner = false, showManagement = false }) => {
   const { user, isAuthenticated } = useAuth()
@@ -17,30 +18,9 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onEdit, onDelete, 
   
   const price = parseFloat(product.price) || 0
   
-  // Get primary image - matches backend get_images_list() priority
-  const getPrimaryImage = () => {
-    // Priority: image_1 > image_2 > image_3 > image_url
-    if (product.image_1) return product.image_1
-    if (product.image_2) return product.image_2
-    if (product.image_3) return product.image_3
-    if (product.image_url) return product.image_url
-    return null
-  }
-  
-  const imageUrl = getPrimaryImage()
+  const allImages = getProductImages(product)
+  const imageUrl = allImages[0]
   const productImage = imageUrl && !imageError ? imageUrl : `https://placehold.co/400x400/amber-500/white?text=${product.name?.charAt(0) || 'P'}`
-  
-  // Get all images for display
-  const getAllImages = () => {
-    const images = []
-    if (product.image_1) images.push(product.image_1)
-    if (product.image_2) images.push(product.image_2)
-    if (product.image_3) images.push(product.image_3)
-    if (product.image_url && images.length === 0) images.push(product.image_url)
-    return images
-  }
-  
-  const allImages = getAllImages()
   const hasMultipleImages = allImages.length > 1
   
   // Helper to get category display (matches backend category_display)

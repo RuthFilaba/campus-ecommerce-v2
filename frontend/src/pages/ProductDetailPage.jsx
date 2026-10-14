@@ -10,6 +10,7 @@ import { saveDirectCheckout, savePendingPurchase } from "../services/purchaseFlo
 import PremiumBreadcrumb from "../components/common/PremiumBreadcrumb";
 import { isPreviewAuth } from "../services/auth";
 import { readAllPreviewSellerProducts } from "../services/previewSellerData";
+import { getProductImages } from "../utils/productImages";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -23,6 +24,9 @@ export default function ProductDetailPage() {
     ...(isPreviewAuth ? readAllPreviewSellerProducts() : []),
   ], []);
   const product = catalogue.find((item) => String(item.id) === String(id));
+  const [selectedImage, setSelectedImage] = useState("");
+  const productImages = getProductImages(product);
+  const activeImage = productImages.includes(selectedImage) ? selectedImage : productImages[0];
   const [quantity, setQuantity] = useState(1);
   const [saved, setSaved] = useState(() => product ? readPreviewWishlist().includes(product.id) : false);
 
@@ -77,10 +81,11 @@ export default function ProductDetailPage() {
         <div className="mt-5 grid gap-7 lg:grid-cols-[minmax(0,1.05fr)_minmax(400px,.95fr)] lg:gap-12">
           <div className="overflow-hidden rounded-[24px] border border-slate-200/80 bg-white p-2.5 sm:rounded-[28px] sm:p-3">
             <div className="relative aspect-[1.08/1] overflow-hidden rounded-[18px] bg-slate-100 sm:rounded-[22px]">
-              <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" />
+              <img src={activeImage} alt={product.name} className="h-full w-full object-cover" />
               <span className="absolute left-4 top-4 rounded-full border border-white/70 bg-white/90 px-3 py-1.5 text-[11px] font-bold text-slate-700 shadow-sm backdrop-blur">{getConditionLabel(product.condition)}</span>
               <span className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-slate-950/75 px-3 py-1.5 text-[11px] font-semibold text-white backdrop-blur"><MapPin size={12} /> {product.campus}</span>
             </div>
+            {productImages.length > 1 && <div className="mt-3 flex gap-2 overflow-x-auto px-1">{productImages.map((image, index) => <button key={`${product.id}-image-${index}`} type="button" onClick={() => setSelectedImage(image)} aria-label={`Show product image ${index + 1}`} aria-pressed={activeImage === image} className={`h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 transition ${activeImage === image ? "border-amber-400" : "border-transparent opacity-70 hover:opacity-100"}`}><img src={image} alt="" className="h-full w-full object-cover" /></button>)}</div>}
             <div className="flex items-center justify-between gap-3 px-2 pb-1 pt-3 text-xs text-slate-500 sm:px-3">
               <span>Marketplace preview listing</span>
               {!isSeller && <button type="button" onClick={toggleSaved} aria-pressed={saved} className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 font-semibold transition ${saved ? "text-rose-600" : "text-slate-600 hover:bg-slate-100"}`}><Heart size={14} fill={saved ? "currentColor" : "none"} /> {saved ? "Saved" : "Save item"}</button>}
@@ -132,7 +137,7 @@ export default function ProductDetailPage() {
           <section className="mt-14 border-t border-slate-200 pt-9" aria-labelledby="related-title">
             <div className="flex items-end justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[.14em] text-amber-700">Keep exploring</p><h2 id="related-title" className="mt-1.5 text-xl font-semibold tracking-tight text-slate-950">More in {getCategoryLabel(product.category)}</h2></div><Link to={`/products?category=${product.category}`} className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 transition hover:text-amber-700">See all <ArrowRight size={14} /></Link></div>
             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-              {related.map((item) => <Link key={item.id} to={`/products/${item.id}`} className="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white transition hover:-translate-y-0.5 hover:shadow-lg"><div className="aspect-[1.5/1] overflow-hidden bg-slate-100"><img src={item.image_url} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /></div><div className="p-3.5"><p className="line-clamp-1 text-xs font-semibold text-slate-800">{item.name}</p><p className="mt-1.5 text-sm font-bold text-slate-950">K{Number(item.price).toLocaleString("en-ZM")}</p></div></Link>)}
+              {related.map((item) => <Link key={item.id} to={`/products/${item.id}`} className="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white transition hover:-translate-y-0.5 hover:shadow-lg"><div className="aspect-[1.5/1] overflow-hidden bg-slate-100"><img src={getProductImages(item)[0]} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /></div><div className="p-3.5"><p className="line-clamp-1 text-xs font-semibold text-slate-800">{item.name}</p><p className="mt-1.5 text-sm font-bold text-slate-950">K{Number(item.price).toLocaleString("en-ZM")}</p></div></Link>)}
             </div>
           </section>
         )}

@@ -15,6 +15,7 @@ import {
   faMessage
 } from "@fortawesome/free-solid-svg-icons"
 import toast from "react-hot-toast"
+import { getProductPrimaryImage } from "../utils/productImages"
 
 const PublicProfilePage = () => {
   const { userId } = useParams()
@@ -290,7 +291,7 @@ const PublicProfilePage = () => {
                 >
                   <div className="aspect-square bg-gray-100 dark:bg-gray-700 overflow-hidden">
                     <img
-                      src={product.image_1 || product.image_url || `https://placehold.co/300x300/amber-500/white?text=${product.name?.charAt(0) || 'P'}`}
+                      src={getProductPrimaryImage(product, `https://placehold.co/300x300/amber-500/white?text=${product.name?.charAt(0) || 'P'}`)}
                       alt={product.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => {

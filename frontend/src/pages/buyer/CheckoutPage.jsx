@@ -6,6 +6,7 @@ import { createPreviewOrder } from "../../services/previewOrders";
 import { toCartSummary } from "../../services/previewCart";
 import { clearDirectCheckout, readDirectCheckout } from "../../services/purchaseFlow";
 import PremiumBreadcrumb from "../../components/common/PremiumBreadcrumb";
+import { getProductPrimaryImage } from "../../utils/productImages";
 
 const meetupLocations = [
   "Campus library main entrance",
@@ -101,7 +102,7 @@ export default function CheckoutPage() {
 
             <aside className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6">
               <h2 className="text-sm font-bold text-slate-900">{isDirectPurchase ? "Buy now summary" : "Order summary"} <span className="ml-1 font-medium text-slate-400">({checkoutCart.count})</span></h2>
-              <ul className="mt-4 max-h-[280px] space-y-4 overflow-y-auto pr-1">{checkoutCart.items.map(({ product, quantity }) => <li key={product.id} className="flex gap-3"><div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100"><img src={product.image_url} alt="" className="h-full w-full object-cover" /><span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-slate-900 px-1 text-[9px] font-bold text-white">{quantity}</span></div><div className="min-w-0 flex-1"><p className="line-clamp-2 text-xs font-semibold leading-4 text-slate-800">{product.name}</p><p className="mt-1 text-[10px] text-slate-400">{product.seller_name}</p></div><span className="shrink-0 text-xs font-bold text-slate-800">K{(Number(product.price) * quantity).toLocaleString("en-ZM")}</span></li>)}</ul>
+              <ul className="mt-4 max-h-[280px] space-y-4 overflow-y-auto pr-1">{checkoutCart.items.map(({ product, quantity }) => <li key={product.id} className="flex gap-3"><div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100"><img src={getProductPrimaryImage(product)} alt="" className="h-full w-full object-cover" /><span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-slate-900 px-1 text-[9px] font-bold text-white">{quantity}</span></div><div className="min-w-0 flex-1"><p className="line-clamp-2 text-xs font-semibold leading-4 text-slate-800">{product.name}</p><p className="mt-1 text-[10px] text-slate-400">{product.seller_name}</p></div><span className="shrink-0 text-xs font-bold text-slate-800">K{(Number(product.price) * quantity).toLocaleString("en-ZM")}</span></li>)}</ul>
               <div className="my-4 h-px bg-slate-100" />
               <div className="space-y-2.5 text-xs"><div className="flex justify-between text-slate-500"><span>Subtotal</span><span className="font-semibold text-slate-800">K{Number(checkoutCart.total).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div><div className="flex justify-between text-slate-500"><span>Meetup</span><span className="font-semibold text-slate-800">No delivery fee</span></div></div>
               <div className="mt-4 flex justify-between border-t border-slate-100 pt-4"><span className="text-sm font-bold text-slate-800">Total</span><span className="text-lg font-bold tracking-tight text-slate-950">K{Number(checkoutCart.total).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div>

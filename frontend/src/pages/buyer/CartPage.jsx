@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Minus, Plus, ShieldCheck, ShoppingBag, Trash2 } 
 import { useCart } from "../../contexts/CartContext";
 import { clearDirectCheckout } from "../../services/purchaseFlow";
 import PremiumBreadcrumb from "../../components/common/PremiumBreadcrumb";
+import { getProductPrimaryImage } from "../../utils/productImages";
 
 export default function CartPage() {
   const { cart, updateQuantity, removeItem } = useCart();
@@ -37,7 +38,7 @@ export default function CartPage() {
               {cart.items.map(({ product, quantity }) => (
                 <li key={product.id} className="relative grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_120px_130px_40px] sm:items-center sm:gap-4 sm:px-5 sm:py-4">
                   <div className="flex min-w-0 items-center gap-3.5">
-                    <Link to={`/products/${product.id}`} className="h-[76px] w-[76px] shrink-0 overflow-hidden rounded-xl bg-slate-100"><img src={product.image_url} alt="" className="h-full w-full object-cover" /></Link>
+                    <Link to={`/products/${product.id}`} className="h-[76px] w-[76px] shrink-0 overflow-hidden rounded-xl bg-slate-100"><img src={getProductPrimaryImage(product)} alt="" className="h-full w-full object-cover" /></Link>
                     <div className="min-w-0"><Link to={`/products/${product.id}`} className="line-clamp-2 text-sm font-semibold leading-5 text-slate-900 transition hover:text-amber-700">{product.name}</Link><p className="mt-1 text-xs text-slate-500">{product.seller_name}</p><p className="mt-1 text-[10px] font-medium text-slate-400">Meetup at {product.campus}</p></div>
                   </div>
                   <div className="text-sm font-bold text-slate-900 sm:block">K{Number(product.price).toLocaleString("en-ZM")}</div>
