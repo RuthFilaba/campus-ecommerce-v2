@@ -1,553 +1,123 @@
-import { useState, useEffect } from "react"
-import { useParams, useNavigate, Link } from "react-router-dom"
-import { useAuth } from "../contexts/AuthContext"
-import api from "../services/api"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { 
-  faShoppingCart, 
-  faHeart, 
-  faStar, 
-  faShare, 
-  faChevronLeft,
-  faMessage,
-  faStore,
-  faTruck,
-  faSpinner,
-  faBox,
-  faEdit,
-  faTrash,
-  faChartLine,
-  faChevronRight,
-  faChevronLeft as faChevronLeftIcon
-} from "@fortawesome/free-solid-svg-icons"
-import toast from "react-hot-toast"
+import { useMemo, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, ArrowRight, Check, Heart, MapPin, Minus, Plus, ShieldCheck, ShoppingBag, Store } from "lucide-react";
+import toast from "react-hot-toast";
+import { useCart } from "../contexts/CartContext";
+import { useAuth } from "../contexts/AuthContext";
+import { getCategoryLabel, getConditionLabel, previewProducts } from "../data/previewProducts";
+import { readPreviewWishlist, writePreviewWishlist } from "../services/previewWishlist";
 
-const ProductDetailPage = () => {
-  const { id } = useParams()
-  const { user, isAuthenticated } = useAuth()
-  const navigate = useNavigate()
-  const [product, setProduct] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [quantity, setQuantity] = useState(1)
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [addingToCart, setAddingToCart] = useState(false)
-  const [addingToWishlist, setAddingToWishlist] = useState(false)
-  const [startingChat, setStartingChat] = useState(false)
-  const [inWishlist, setInWishlist] = useState(false)
+export default function ProductDetailPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const product = previewProducts.find((item) => String(item.id) === String(id));
+  const { addItem } = useCart();
+  const { isAuthenticated } = useAuth();
+  const [quantity, setQuantity] = useState(1);
+  const [saved, setSaved] = useState(() => product ? readPreviewWishlist().includes(product.id) : false);
 
-  useEffect(() => {
-    fetchProduct()
-  }, [id])
+  const related = useMemo(() => previewProducts.filter((item) => item.category === product?.category && item.id !== product?.id).slice(0, 3), [product]);
 
-  useEffect(() => {
-    if (isAuthenticated && product && user?.role !== "seller") {
-      checkInWishlist()
-    }
-  }, [product, isAuthenticated, user])
-
-  // Get all images from product (matches backend get_images_list)
-  const getProductImages = (product) => {
-    const images = []
-    if (product?.image_1) images.push(product.image_1)
-    if (product?.image_2) images.push(product.image_2)
-    if (product?.image_3) images.push(product.image_3)
-    if (product?.image_url && images.length === 0) images.push(product.image_url)
-    return images
-  }
-
-  const fetchProduct = async () => {
-    try {
-      const response = await api.get(`/products/${id}/`)
-      setProduct(response.data)
-    } catch (error) {
-      console.error("Failed to fetch product:", error)
-      toast.error("Product not found")
-      navigate("/products")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const checkInWishlist = async () => {
-    try {
-      const response = await api.get(`/wishlist/check/${product.id}/`)
-      setInWishlist(response.data.in_wishlist)
-    } catch (error) {
-      console.error("Failed to check wishlist status:", error)
-    }
-  }
-
-  const handleAddToCart = async () => {
-    if (user?.role === "seller") {
-      toast.error("Seller accounts cannot purchase products. Please create a buyer account.")
-      return
-    }
-    
-    if (!isAuthenticated) {
-      toast.error("Please login to add items to cart")
-      navigate("/login", { state: { from: `/products/${id}` } })
-      return
-    }
-
-    setAddingToCart(true)
-    try {
-      await api.post('/cart/add/', { product_id: product.id, quantity })
-      toast.success(`Added ${quantity} x ${product.name} to cart!`)
-    } catch (error) {
-      console.error("Failed to add to cart:", error)
-      toast.error(error.response?.data?.message || "Failed to add to cart")
-    } finally {
-      setAddingToCart(false)
-    }
-  }
-
-  const handleAddToWishlist = async () => {
-    if (user?.role === "seller") {
-      toast.error("Seller accounts cannot use wishlist. Please create a buyer account.")
-      return
-    }
-    
-    if (!isAuthenticated) {
-      toast.error("Please login to add to wishlist")
-      navigate("/login", { state: { from: `/products/${id}` } })
-      return
-    }
-
-    setAddingToWishlist(true)
-    try {
-      await api.post('/wishlist/add/', { product_id: product.id })
-      setInWishlist(true)
-      toast.success("Added to wishlist!")
-    } catch (error) {
-      if (error.response?.data?.error?.includes("own product")) {
-        toast.error("You cannot add your own product to wishlist")
-      } else {
-        toast.error("Failed to add to wishlist")
-      }
-    } finally {
-      setAddingToWishlist(false)
-    }
-  }
-
-  const handleBuyNow = async () => {
-    if (user?.role === "seller") {
-      toast.error("Seller accounts cannot purchase products. Please create a buyer account.")
-      return
-    }
-    
-    if (!isAuthenticated) {
-      toast.error("Please login to proceed with purchase")
-      navigate("/login", { state: { from: `/products/${id}` } })
-      return
-    }
-
-    setAddingToCart(true)
-    try {
-      await api.post('/cart/add/', { product_id: product.id, quantity })
-      navigate("/checkout")
-    } catch (error) {
-      console.error("Failed to add to cart:", error)
-      toast.error(error.response?.data?.message || "Failed to proceed")
-    } finally {
-      setAddingToCart(false)
-    }
-  }
-
-  const handleChat = async () => {
-    if (!isAuthenticated) {
-      toast.error("Please login to chat")
-      navigate("/login")
-      return
-    }
-
-    if (isOwner) {
-      toast.error("You cannot chat about your own product")
-      return
-    }
-
-    setStartingChat(true)
-    
-    try {
-      navigate("/messages", { 
-        state: { 
-          productId: product.id,
-          productName: product.name,
-          productPrice: product.price,
-          productImage: product.image_1 || product.image_url,
-          sellerId: product.seller_id,
-          sellerName: product.seller_name,
-          initialMessage: `Hi! I'm interested in your product: ${product.name}`
-        } 
-      })
-    } catch (error) {
-      console.error("Failed to start chat:", error)
-      toast.error("Failed to start chat")
-    } finally {
-      setStartingChat(false)
-    }
-  }
-
-  const handleDeleteProduct = async () => {
-    if (!confirm("Are you sure you want to delete this product? This action cannot be undone.")) {
-      return
-    }
-    
-    try {
-      await api.delete(`/products/${product.id}/`)
-      toast.success("Product deleted successfully")
-      navigate("/seller/products")
-    } catch (error) {
-      console.error("Failed to delete product:", error)
-      toast.error("Failed to delete product")
-    }
-  }
-
-  const nextImage = () => {
-    const images = getProductImages(product)
-    if (images.length > 1) {
-      setCurrentImageIndex((prev) => (prev + 1) % images.length)
-    }
-  }
-
-  const prevImage = () => {
-    const images = getProductImages(product)
-    if (images.length > 1) {
-      setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
-    }
-  }
-
-  if (loading) {
+  if (!product) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <FontAwesomeIcon icon={faSpinner} className="animate-spin text-4xl text-amber-500" />
-      </div>
-    )
-  }
-
-  if (!product) return null
-
-  const isOwner = isAuthenticated && user && product.seller_id && Number(product.seller_id) === Number(user?.id)
-  const isSellerAccount = user?.role === "seller"
-  const isBuyerAccount = isAuthenticated && !isSellerAccount
-
-  const images = getProductImages(product)
-  const displayImages = images.length > 0 ? images : [`https://placehold.co/600x600/amber-500/white?text=${product.name?.charAt(0) || 'P'}`]
-  const currentImage = displayImages[currentImageIndex] || displayImages[0]
-
-  // Category display (matches backend)
-  const categoryMap = {
-    'food': 'Food & Drinks',
-    'academic': 'Academic',
-    'fashion': 'Fashion',
-    'tech-mobile': 'Tech & Mobile',
-    'events': 'Events & Tickets',
-    'marketplace': 'Marketplace'
-  }
-  const categoryDisplay = categoryMap[product.category] || product.category || 'General'
-
-  // Condition display (matches backend)
-  const conditionMap = {
-    'new': 'Brand New',
-    'like_new': 'Like New',
-    'good': 'Good',
-    'fair': 'Fair',
-    'poor': 'Poor'
-  }
-  const conditionDisplay = conditionMap[product.condition] || product.condition || 'Good'
-
-  const price = parseFloat(product.price) || 0
-
-  return (
-    <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
-      <div className="container-custom max-w-6xl mx-auto px-4">
-        <button
-          onClick={() => navigate(-1)}
-          className="mb-4 flex items-center gap-2 text-gray-600 hover:text-amber-500 transition-colors"
-        >
-          <FontAwesomeIcon icon={faChevronLeft} />
-          Back
-        </button>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-          <div className="grid md:grid-cols-2 gap-8 p-6">
-            {/* Image Gallery */}
-            <div>
-              <div className="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                <img
-                  src={currentImage}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
-                {displayImages.length > 1 && (
-                  <>
-                    <button
-                      onClick={prevImage}
-                      className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-md transition-colors"
-                    >
-                      <FontAwesomeIcon icon={faChevronLeftIcon} />
-                    </button>
-                    <button
-                      onClick={nextImage}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-md transition-colors"
-                    >
-                      <FontAwesomeIcon icon={faChevronRight} />
-                    </button>
-                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
-                      {displayImages.map((_, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setCurrentImageIndex(idx)}
-                          className={`w-2 h-2 rounded-full transition-colors ${
-                            idx === currentImageIndex ? "bg-amber-500" : "bg-white/50"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-              {displayImages.length > 1 && (
-                <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-                  {displayImages.map((img, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setCurrentImageIndex(idx)}
-                      className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${
-                        currentImageIndex === idx ? "border-amber-500" : "border-transparent"
-                      }`}
-                    >
-                      <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Product Info */}
-            <div>
-              {/* Featured Badge */}
-              {product.is_featured && (
-                <span className="inline-block bg-amber-500 text-white text-xs px-2 py-1 rounded-full mb-2">
-                  ⭐ Featured Product
-                </span>
-              )}
-              
-              <h1 className="text-2xl md:text-3xl font-bold mb-3">{product.name}</h1>
-              
-              {/* Seller info */}
-              <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                    <FontAwesomeIcon icon={faStore} className="text-amber-500 text-sm" />
-                  </div>
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Sold by <span className="font-medium">{product.seller_name || "Campus Seller"}</span>
-                  </span>
-                </div>
-                
-                {/* Chat Button - Only for buyers */}
-                {isBuyerAccount && !isOwner && (
-                  <button
-                    onClick={handleChat}
-                    disabled={startingChat}
-                    className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
-                  >
-                    {startingChat ? (
-                      <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
-                    ) : (
-                      <FontAwesomeIcon icon={faMessage} />
-                    )}
-                    {startingChat ? "Opening Chat..." : "Chat with Seller"}
-                  </button>
-                )}
-              </div>
-
-              {/* Price */}
-              <div className="mb-4">
-                <span className="text-3xl font-bold text-amber-600 dark:text-amber-400">
-                  K{price.toFixed(2)}
-                </span>
-                {product.stock > 0 && product.stock <= 5 && (
-                  <span className="ml-3 text-sm text-orange-500">🔥 Only {product.stock} left!</span>
-                )}
-              </div>
-
-              {/* Category & Condition */}
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-sm">
-                  📂 {categoryDisplay}
-                </span>
-                <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-sm">
-                  📦 {conditionDisplay}
-                </span>
-                {product.is_approved && (
-                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                    ✅ Verified
-                  </span>
-                )}
-              </div>
-
-              {/* Rating */}
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex text-amber-400">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <FontAwesomeIcon 
-                      key={star} 
-                      icon={faStar} 
-                      className={star <= (product.rating || 4) ? "text-amber-400" : "text-gray-300"}
-                    />
-                  ))}
-                </div>
-                <span className="text-sm text-gray-500">({product.review_count || 0} reviews)</span>
-              </div>
-
-              {/* Description */}
-              <div className="mb-6">
-                <h3 className="font-semibold mb-2">Description</h3>
-                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                  {product.description || "No description available."}
-                </p>
-              </div>
-
-              {/* SELLER MANAGEMENT PANEL */}
-              {isOwner && (
-                <div className="mb-6 space-y-4">
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
-                    <p className="text-blue-700 dark:text-blue-300 font-semibold">
-                      <FontAwesomeIcon icon={faStore} className="mr-2" />
-                      Manage Your Product
-                    </p>
-                    <p className="text-blue-600 dark:text-blue-400 text-sm mt-1">
-                      Stock: {product.stock} items available
-                    </p>
-                  </div>
-                  
-                  <div className="flex gap-3">
-                    <Link
-                      to={`/seller/products/edit/${product.id}`}
-                      className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-lg transition-colors text-center flex items-center justify-center gap-2"
-                    >
-                      <FontAwesomeIcon icon={faEdit} />
-                      Edit Product
-                    </Link>
-                    <Link
-                      to="/seller/products"
-                      className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 rounded-lg transition-colors text-center flex items-center justify-center gap-2"
-                    >
-                      <FontAwesomeIcon icon={faChartLine} />
-                      All Products
-                    </Link>
-                    <button
-                      onClick={handleDeleteProduct}
-                      className="px-4 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* BUYER PURCHASE SECTION */}
-              {isBuyerAccount && !isOwner && (
-                <>
-                  {product.stock > 0 && (
-                    <div className="mb-6">
-                      <h3 className="font-semibold mb-2">Quantity</h3>
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                          className="w-8 h-8 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
-                        >
-                          -
-                        </button>
-                        <span className="w-12 text-center font-medium">{quantity}</span>
-                        <button
-                          onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                          className="w-8 h-8 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex gap-4 mb-6">
-                    <button
-                      onClick={handleAddToCart}
-                      disabled={addingToCart || product.stock === 0}
-                      className={`flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
-                    >
-                      <FontAwesomeIcon icon={faShoppingCart} />
-                      {addingToCart ? "Adding..." : (product.stock === 0 ? "Out of Stock" : "Add to Cart")}
-                    </button>
-                    <button
-                      onClick={handleBuyNow}
-                      disabled={addingToCart || product.stock === 0}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50"
-                    >
-                      Buy Now
-                    </button>
-                    <button
-                      onClick={handleAddToWishlist}
-                      disabled={addingToWishlist || inWishlist}
-                      className={`px-6 py-3 border rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                        inWishlist 
-                          ? "bg-red-50 border-red-300 text-red-500" 
-                          : "border-gray-300 hover:bg-gray-100"
-                      }`}
-                      title={inWishlist ? "Already in wishlist" : "Add to wishlist"}
-                    >
-                      {addingToWishlist ? (
-                        <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
-                      ) : (
-                        <FontAwesomeIcon icon={faHeart} className={inWishlist ? "text-red-500" : ""} />
-                      )}
-                    </button>
-                    <button className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
-                      <FontAwesomeIcon icon={faShare} />
-                    </button>
-                  </div>
-
-                  {product.stock === 0 && (
-                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-center">
-                      <p className="text-red-600 dark:text-red-400 font-semibold">Out of Stock</p>
-                    </div>
-                  )}
-
-                  {product.stock > 0 && product.stock <= 5 && (
-                    <p className="text-sm text-orange-500 mb-4">🔥 Only {product.stock} left in stock!</p>
-                  )}
-                </>
-              )}
-
-              {/* SELLER VIEWING OTHER PRODUCTS */}
-              {isSellerAccount && !isOwner && (
-                <div className="mb-6 p-6 bg-gray-100 dark:bg-gray-700 rounded-lg text-center">
-                  <FontAwesomeIcon icon={faStore} className="text-amber-500 text-3xl mb-3" />
-                  <p className="text-gray-700 dark:text-gray-300 font-semibold">
-                    Seller Account Mode
-                  </p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Your account is configured for selling only.<br />
-                    To purchase items, please register as a buyer.
-                  </p>
-                </div>
-              )}
-
-              {/* Shipping info */}
-              <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <p className="text-sm flex items-center gap-2">
-                  <FontAwesomeIcon icon={faTruck} className="text-amber-500" />
-                  Free meetup on campus - Arrange pickup at your convenience
-                </p>
-              </div>
-            </div>
-          </div>
+      <div className="grid min-h-[60vh] place-items-center bg-[#fafaf9] px-5">
+        <div className="max-w-md text-center">
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-white text-slate-500 shadow-sm"><ShoppingBag size={22} /></span>
+          <h1 className="mt-5 text-2xl font-semibold tracking-tight text-slate-900">This preview listing isn’t available</h1>
+          <p className="mt-2 text-sm leading-6 text-slate-500">It may have been removed from the sample catalogue.</p>
+          <Link to="/products" className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"><ArrowLeft size={16} /> Back to marketplace</Link>
         </div>
       </div>
-    </div>
-  )
-}
+    );
+  }
 
-export default ProductDetailPage
+  const toggleSaved = () => {
+    const current = readPreviewWishlist();
+    const next = saved ? current.filter((item) => item !== product.id) : [...current, product.id];
+    writePreviewWishlist(next);
+    setSaved(!saved);
+    toast.success(saved ? "Removed from saved items" : "Saved to your wishlist");
+  };
+
+  const handleAddToCart = () => {
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: { pathname: location.pathname } } });
+      return;
+    }
+    addItem(product, quantity);
+    toast.success(`${quantity} ${quantity === 1 ? "item" : "items"} added to your cart`);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#fafaf9] pb-16">
+      <div className="container-custom pt-6 sm:pt-8">
+        <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-400">
+          <Link to="/" className="transition hover:text-slate-700">Home</Link><span>/</span><Link to="/products" className="transition hover:text-slate-700">Marketplace</Link><span>/</span><Link to={`/products?category=${product.category}`} className="transition hover:text-slate-700">{getCategoryLabel(product.category)}</Link>
+        </nav>
+
+        <div className="mt-5 grid gap-7 lg:grid-cols-[minmax(0,1.05fr)_minmax(400px,.95fr)] lg:gap-12">
+          <div className="overflow-hidden rounded-[24px] border border-slate-200/80 bg-white p-2.5 sm:rounded-[28px] sm:p-3">
+            <div className="relative aspect-[1.08/1] overflow-hidden rounded-[18px] bg-slate-100 sm:rounded-[22px]">
+              <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" />
+              <span className="absolute left-4 top-4 rounded-full border border-white/70 bg-white/90 px-3 py-1.5 text-[11px] font-bold text-slate-700 shadow-sm backdrop-blur">{getConditionLabel(product.condition)}</span>
+              <span className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-slate-950/75 px-3 py-1.5 text-[11px] font-semibold text-white backdrop-blur"><MapPin size={12} /> {product.campus}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3 px-2 pb-1 pt-3 text-xs text-slate-500 sm:px-3">
+              <span>Marketplace preview listing</span>
+              <button type="button" onClick={toggleSaved} aria-pressed={saved} className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 font-semibold transition ${saved ? "text-rose-600" : "text-slate-600 hover:bg-slate-100"}`}><Heart size={14} fill={saved ? "currentColor" : "none"} /> {saved ? "Saved" : "Save item"}</button>
+            </div>
+          </div>
+
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.12em] text-amber-700"><span className="rounded-full bg-amber-50 px-2.5 py-1">{getCategoryLabel(product.category)}</span><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">{product.stock > 0 ? "Available" : "Sold"}</span></div>
+            <h1 className="mt-4 text-3xl font-semibold leading-tight tracking-[-.05em] text-slate-950 sm:text-[38px]">{product.name}</h1>
+            <p className="mt-4 text-[28px] font-bold tracking-[-.045em] text-slate-950">K{Number(product.price).toLocaleString("en-ZM")}</p>
+            <div className="mt-5 h-px bg-slate-200" />
+
+            <div className="mt-5">
+              <h2 className="text-sm font-bold text-slate-900">About this item</h2>
+              <p className="mt-2 text-sm leading-7 text-slate-600">{product.description}</p>
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-slate-200/80 bg-white p-3.5"><span className="block text-[10px] font-bold uppercase tracking-[.1em] text-slate-400">Condition</span><span className="mt-1 block text-sm font-semibold text-slate-800">{getConditionLabel(product.condition)}</span></div>
+              <div className="rounded-xl border border-slate-200/80 bg-white p-3.5"><span className="block text-[10px] font-bold uppercase tracking-[.1em] text-slate-400">Availability</span><span className="mt-1 block text-sm font-semibold text-slate-800">{product.stock} {product.stock === 1 ? "item" : "items"} available</span></div>
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <div className="inline-flex h-12 items-center rounded-xl border border-slate-200 bg-white p-1">
+                <button type="button" aria-label="Decrease quantity" disabled={quantity <= 1} onClick={() => setQuantity((value) => Math.max(1, value - 1))} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"><Minus size={15} /></button>
+                <span className="w-8 text-center text-sm font-bold text-slate-900" aria-live="polite">{quantity}</span>
+                <button type="button" aria-label="Increase quantity" disabled={quantity >= product.stock} onClick={() => setQuantity((value) => Math.min(product.stock, value + 1))} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"><Plus size={15} /></button>
+              </div>
+              <button type="button" onClick={handleAddToCart} disabled={!product.stock} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-400/30 disabled:cursor-not-allowed disabled:opacity-50"><ShoppingBag size={17} /> Add to cart</button>
+              <Link to="/cart" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">View cart <ArrowRight size={15} /></Link>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5">
+              <div className="flex items-start gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-600"><Store size={18} /></span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2"><h2 className="text-sm font-bold text-slate-900">{product.seller_name}</h2><span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700"><Check size={11} /> Campus seller</span></div>
+                  <p className="mt-1 text-xs text-slate-500">{product.campus}</p>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3 text-xs leading-5 text-slate-500"><ShieldCheck size={15} className="shrink-0 text-emerald-600" /> Arrange a convenient campus meetup and check the item before purchase.</div>
+            </div>
+            <p className="mt-4 text-center text-[11px] leading-5 text-slate-400">Preview mode · Sample item and seller information. Cart changes are stored on this device.</p>
+          </div>
+        </div>
+
+        {related.length > 0 && (
+          <section className="mt-14 border-t border-slate-200 pt-9" aria-labelledby="related-title">
+            <div className="flex items-end justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[.14em] text-amber-700">Keep exploring</p><h2 id="related-title" className="mt-1.5 text-xl font-semibold tracking-tight text-slate-950">More in {getCategoryLabel(product.category)}</h2></div><Link to={`/products?category=${product.category}`} className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 transition hover:text-amber-700">See all <ArrowRight size={14} /></Link></div>
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+              {related.map((item) => <Link key={item.id} to={`/products/${item.id}`} className="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white transition hover:-translate-y-0.5 hover:shadow-lg"><div className="aspect-[1.5/1] overflow-hidden bg-slate-100"><img src={item.image_url} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /></div><div className="p-3.5"><p className="line-clamp-1 text-xs font-semibold text-slate-800">{item.name}</p><p className="mt-1.5 text-sm font-bold text-slate-950">K{Number(item.price).toLocaleString("en-ZM")}</p></div></Link>)}
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}

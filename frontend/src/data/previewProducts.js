@@ -1,0 +1,26 @@
+export const categories = [
+  { id: "academic", label: "Academic" },
+  { id: "tech-mobile", label: "Tech & mobile" },
+  { id: "fashion", label: "Fashion" },
+  { id: "food", label: "Food & drinks" },
+  { id: "events", label: "Events & tickets" },
+  { id: "marketplace", label: "Marketplace" },
+];
+
+export const previewProducts = [
+  { id: "preview-101", name: "MacBook Air 13” · M1", category: "tech-mobile", condition: "like_new", price: 8200, stock: 1, seller_name: "Chipo M.", campus: "Great North Road Campus", image_url: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1000&q=85", description: "Lightweight laptop for lectures, research, and everyday work. Carefully looked after and ready for a new student." },
+  { id: "preview-102", name: "Introduction to Economics", category: "academic", condition: "good", price: 280, stock: 1, seller_name: "Tapiwa K.", campus: "Great North Road Campus", image_url: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=1000&q=85", description: "A useful course text in good condition. A few neat highlights inside, with all pages intact." },
+  { id: "preview-103", name: "Wireless studio headphones", category: "tech-mobile", condition: "new", price: 690, stock: 3, seller_name: "Mwamba S.", campus: "Cabinet Office Campus", image_url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1000&q=85", description: "Comfortable over-ear headphones for music, calls, and focused study sessions." },
+  { id: "preview-104", name: "Classic denim jacket", category: "fashion", condition: "like_new", price: 420, stock: 1, seller_name: "Leya B.", campus: "Great North Road Campus", image_url: "https://images.unsplash.com/photo-1543076447-215ad9ba6923?auto=format&fit=crop&w=1000&q=85", description: "An easy everyday layer in a classic medium wash. Gently worn and in excellent condition." },
+  { id: "preview-105", name: "Scientific calculator", category: "academic", condition: "good", price: 350, stock: 2, seller_name: "Kelvin P.", campus: "Great North Road Campus", image_url: "https://images.unsplash.com/photo-1587145820266-a5951ee6f620?auto=format&fit=crop&w=1000&q=85", description: "Reliable scientific calculator for coursework and exams. Tested and working well." },
+  { id: "preview-106", name: "Canvas everyday backpack", category: "marketplace", condition: "new", price: 540, stock: 2, seller_name: "Ruth N.", campus: "Cabinet Office Campus", image_url: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=1000&q=85", description: "Roomy everyday backpack with space for books, a laptop, and all the essentials." },
+  { id: "preview-107", name: "Mechanical keyboard", category: "tech-mobile", condition: "good", price: 950, stock: 1, seller_name: "Bwalya M.", campus: "Great North Road Campus", image_url: "https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=1000&q=85", description: "Compact mechanical keyboard with tactile switches. Great for long writing or coding sessions." },
+  { id: "preview-108", name: "Everyday running shoes", category: "fashion", condition: "like_new", price: 760, stock: 1, seller_name: "Natasha C.", campus: "Great North Road Campus", image_url: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1000&q=85", description: "Light, comfortable trainers for campus walks and weekend runs." },
+  { id: "preview-109", name: "Desk study lamp", category: "marketplace", condition: "new", price: 320, stock: 4, seller_name: "Misozi L.", campus: "Cabinet Office Campus", image_url: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=1000&q=85", description: "A warm, adjustable desk light for late study evenings and tidy workspaces." },
+  { id: "preview-110", name: "Campus event pass", category: "events", condition: "new", price: 150, stock: 5, seller_name: "Campus Events", campus: "Great North Road Campus", image_url: "https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1000&q=85", description: "Preview listing for a campus social event. Event details and availability are sample content." },
+  { id: "preview-111", name: "Handmade study planner", category: "academic", condition: "new", price: 180, stock: 6, seller_name: "Tadala Z.", campus: "Great North Road Campus", image_url: "https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=1000&q=85", description: "Undated weekly planner to keep classes, deadlines, and personal goals in one place." },
+  { id: "preview-112", name: "Reusable coffee tumbler", category: "food", condition: "new", price: 220, stock: 3, seller_name: "Mwaka H.", campus: "Cabinet Office Campus", image_url: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?auto=format&fit=crop&w=1000&q=85", description: "A sturdy reusable tumbler for your morning coffee or tea on the way to class." },
+];
+
+export const getCategoryLabel = (category) => categories.find((item) => item.id === category)?.label || "Marketplace";
+export const getConditionLabel = (condition) => ({ new: "New", like_new: "Like new", good: "Good", fair: "Fair", poor: "Well loved" })[condition] || condition;

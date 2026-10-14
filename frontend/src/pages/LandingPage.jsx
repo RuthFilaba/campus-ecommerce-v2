@@ -1,473 +1,149 @@
-import { useState, useEffect } from "react"
-import { Link } from "react-router-dom"
-import { motion, useScroll, useTransform } from "framer-motion"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { 
-  faArrowRight, 
-  faStar, 
-  faTruck, 
-  faShieldAlt, 
-  faHeart,
-  faShoppingBag,
-  faClock,
-  faCheckCircle,
-  faStore,
-  faLeaf,
-  faRocket,
-  faQuoteLeft,
-  faGraduationCap,
-  faHandshake,
-  faChartLine,
-  faSpinner
-} from "@fortawesome/free-solid-svg-icons"
-import api from "../services/api"
-import Navbar from "../components/Navbar"
+import { ArrowRight, BookOpen, Check, GraduationCap, Laptop, MapPin, ShieldCheck, Shirt, Sparkles, Utensils } from "lucide-react";
+import { Link } from "react-router-dom";
 
-const LandingPage = () => {
-  const [featuredProducts, setFeaturedProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const { scrollYProgress } = useScroll()
-  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0])
-  const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95])
+const categories = [
+  { label: "Tech & mobile", value: "tech-mobile", icon: Laptop, tone: "bg-blue-50 text-blue-700" },
+  { label: "Academic", value: "academic", icon: BookOpen, tone: "bg-violet-50 text-violet-700" },
+  { label: "Fashion", value: "fashion", icon: Shirt, tone: "bg-rose-50 text-rose-700" },
+  { label: "Food & drinks", value: "food", icon: Utensils, tone: "bg-orange-50 text-orange-700" },
+];
 
-  useEffect(() => {
-    fetchFeaturedProducts()
-  }, [])
+const featured = [
+  { id: "sample-laptop", name: "Everyday tech, ready for class", category: "Tech & mobile", price: "Explore tech", image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=85", query: "tech-mobile" },
+  { id: "sample-books", name: "Your next semester starts here", category: "Academic", price: "Find your books", image: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=900&q=85", query: "academic" },
+  { id: "sample-style", name: "A little something for your style", category: "Fashion", price: "Browse fashion", image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=900&q=85", query: "fashion" },
+];
 
-  const fetchFeaturedProducts = async () => {
-    try {
-      const response = await api.get('/products/')
-      let products = []
-      if (response.data.results) {
-        products = response.data.results
-      } else if (Array.isArray(response.data)) {
-        products = response.data
-      } else {
-        products = response.data.results || response.data.data || []
-      }
-      setFeaturedProducts(products.slice(0, 4))
-    } catch (error) {
-      console.error("Failed to fetch products:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
+const benefits = [
+  { icon: GraduationCap, title: "Made for campus life", text: "Find useful things from people in your university community." },
+  { icon: MapPin, title: "Meet nearby", text: "Coordinate a convenient campus meetup with your seller." },
+  { icon: ShieldCheck, title: "Shop with confidence", text: "See seller and listing details before you make a decision." },
+];
 
-  // Get primary image - matches backend get_images_list() priority
-  const getPrimaryImage = (product) => {
-    if (product.image_1) return product.image_1
-    if (product.image_2) return product.image_2
-    if (product.image_3) return product.image_3
-    if (product.image_url) return product.image_url
-    return null
-  }
-
-  // Category mapping matching backend
-  const getCategoryDisplay = (category) => {
-    const categoryMap = {
-      'food': 'Food & Drinks',
-      'academic': 'Academic',
-      'fashion': 'Fashion',
-      'tech-mobile': 'Tech & Mobile',
-      'events': 'Events & Tickets',
-      'marketplace': 'Marketplace'
-    }
-    return categoryMap[category] || category || 'General'
-  }
-
-  const categories = [
-    { name: "Electronics", image: "https://images.pexels.com/photos/18105/pexels-photo.jpg?w=600", description: "Laptops, phones & accessories" },
-    { name: "Fashion", image: "https://images.pexels.com/photos/298863/pexels-photo-298863.jpeg?w=600", description: "Clothing, shoes & style" },
-    { name: "Books", image: "https://images.pexels.com/photos/159866/books-book-pages-read-literature-159866.jpeg?w=600", description: "Textbooks & novels" },
-    { name: "Sports", image: "https://images.pexels.com/photos/5131007/pexels-photo-5131007.jpeg?w=600", description: "Equipment & active wear" }
-  ]
-
-  const testimonials = [
-    { 
-      name: "Dr. Sarah Mwila", 
-      role: "Lecturer, Mulungushi University", 
-      text: "CampusEcom has transformed how students access resources. The platform is intuitive and secure.",
-      rating: 5,
-      image: "https://randomuser.me/api/portraits/women/68.jpg"
-    },
-    { 
-      name: "John Banda", 
-      role: "Student Seller", 
-      text: "I sold my laptop within 24 hours. The meetup feature made the transaction smooth and safe.",
-      rating: 5,
-      image: "https://randomuser.me/api/portraits/men/32.jpg"
-    },
-    { 
-      name: "Patricia Phiri", 
-      role: "Buyer", 
-      text: "Found all my textbooks at great prices. Saved over ZMW 800 this semester",
-      rating: 5,
-      image: "https://randomuser.me/api/portraits/women/44.jpg"
-    }
-  ]
-
-  const features = [
-    { icon: faHandshake, title: "Safe Campus Meetups", description: "Meet in person at designated campus locations", color: "from-emerald-500 to-emerald-600" },
-    { icon: faShieldAlt, title: "Secure Payments", description: "Verified transactions with purchase protection", color: "from-blue-500 to-blue-600" },
-    { icon: faGraduationCap, title: "Student Verified", description: "All sellers are verified students", color: "from-purple-500 to-purple-600" },
-    { icon: faChartLine, title: "Best Prices", description: "Fair prices negotiated by students", color: "from-amber-500 to-amber-600" }
-  ]
-
+export default function LandingPage() {
   return (
-    <div className="bg-white dark:bg-gray-900 overflow-hidden">
-      <Navbar />
-
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/40 z-10"></div>
-          <img 
-            src="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?w=1920"
-            alt="Students making a business deal on campus"
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        <div className="container-custom relative z-20 py-32 lg:py-40">
-          <motion.div
-            style={{ opacity, scale }}
-            className="max-w-3xl"
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 bg-amber-500/90 backdrop-blur-sm px-5 py-2 rounded-full mb-6 shadow-lg"
-            >
-              <span className="text-white text-sm font-semibold tracking-wide">WELCOME TO MULUNGUSHI'S MARKETPLACE</span>
-            </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-5xl lg:text-7xl xl:text-8xl font-bold text-white mb-6 leading-tight drop-shadow-2xl"
-            >
-              Buy & Sell on
-              <span className="text-amber-400 block mt-2">Campus with Confidence</span>
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-xl text-gray-100 mb-8 max-w-2xl leading-relaxed drop-shadow-lg"
-            >
-              The premier marketplace for Mulungushi University students. 
-              Discover great deals, sell your items, and connect with fellow students – all in one place.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="flex flex-col sm:flex-row gap-4"
-            >
-              <Link 
-                to="/products" 
-                className="group bg-amber-500 hover:bg-amber-600 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all flex items-center justify-center gap-2 shadow-xl hover:shadow-2xl"
-              >
-                Start Shopping
-                <FontAwesomeIcon icon={faArrowRight} className="group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link 
-                to="/register" 
-                className="group bg-white/10 backdrop-blur-md border-2 border-white hover:border-amber-400 text-white hover:text-amber-400 px-8 py-4 rounded-full font-semibold text-lg transition-all flex items-center justify-center gap-2"
-              >
-                Become a Seller
-                <FontAwesomeIcon icon={faStore} className="group-hover:scale-110 transition-transform" />
-              </Link>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="flex flex-wrap items-center gap-6 mt-12 pt-8 border-t border-white/20"
-            >
-              <div className="flex items-center gap-2">
-                <div className="flex gap-0.5">
-                  {[...Array(5)].map((_, i) => <FontAwesomeIcon key={i} icon={faStar} className="text-amber-400 text-sm" />)}
+    <div className="overflow-hidden bg-white text-slate-900">
+      <main>
+        <section className="container-custom pb-12 pt-7 sm:pb-16 sm:pt-9 lg:pb-20 lg:pt-11">
+          <div className="relative isolate min-h-[540px] overflow-hidden rounded-[28px] bg-slate-950 sm:min-h-[590px] sm:rounded-[34px] lg:min-h-[620px]">
+            <img src="/images/hero-bg.png" alt="Students connecting in the campus marketplace" className="absolute inset-0 -z-20 h-full w-full object-cover object-center" />
+            <div className="absolute inset-0 -z-10 bg-gradient-to-r from-slate-950/90 via-slate-950/70 to-slate-950/10" />
+            <div className="absolute inset-0 -z-10 bg-gradient-to-t from-slate-950/45 via-transparent to-slate-950/10" />
+            <div className="flex min-h-[540px] items-center px-6 py-14 sm:min-h-[590px] sm:px-12 sm:py-16 lg:min-h-[620px] lg:px-[7%]">
+              <div className="max-w-[620px]">
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[.14em] text-white backdrop-blur-md">
+                  <Sparkles size={14} className="text-amber-300" /> The marketplace for campus
                 </div>
-                <span className="text-sm text-gray-200">4.9/5 from 2,000+ reviews</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <FontAwesomeIcon icon={faShieldAlt} className="text-emerald-400" />
-                <span className="text-sm text-gray-200">Secure Transactions</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <FontAwesomeIcon icon={faHandshake} className="text-amber-400" />
-                <span className="text-sm text-gray-200">Safe Campus Meetups</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex -space-x-2">
-                  <div className="w-7 h-7 bg-amber-500 rounded-full border-2 border-white"></div>
-                  <div className="w-7 h-7 bg-blue-500 rounded-full border-2 border-white"></div>
-                  <div className="w-7 h-7 bg-green-500 rounded-full border-2 border-white"></div>
+                <h1 className="max-w-[640px] text-[42px] font-semibold leading-[1.05] tracking-[-.055em] text-white sm:text-6xl lg:text-[68px]">
+                  Good finds.<br />
+                  <span className="text-amber-400">Closer to home.</span>
+                </h1>
+                <p className="mt-6 max-w-[490px] text-[15px] leading-7 text-white/75 sm:text-[17px] sm:leading-8">
+                  Discover useful finds from the Mulungushi University community. Shop nearby, connect with student sellers, and make campus life a little easier.
+                </p>
+                <div className="mt-8 flex flex-col gap-3 min-[420px]:flex-row">
+                  <Link to="/products" className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-amber-500 px-5 text-sm font-bold text-slate-950 shadow-[0_10px_28px_rgba(245,158,11,.24)] transition hover:-translate-y-0.5 hover:bg-amber-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-300/40">
+                    Explore marketplace <ArrowRight size={17} className="transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                  <Link to="/register?role=seller" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 text-sm font-semibold text-white backdrop-blur-sm transition hover:border-white/60 hover:bg-white/15">
+                    Start selling
+                  </Link>
                 </div>
-                <span className="text-sm text-gray-200">1,000+ Active Students</span>
+                <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-white/15 pt-6 text-xs font-medium text-white/75 sm:text-[13px]">
+                  <span className="inline-flex items-center gap-2"><Check size={15} className="text-amber-300" /> Browse campus listings</span>
+                  <span className="inline-flex items-center gap-2"><Check size={15} className="text-amber-300" /> Connect with local sellers</span>
+                </div>
               </div>
-            </motion.div>
-          </motion.div>
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 1 }}
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20"
-        >
-          <div className="w-7 h-11 border-2 border-white/40 rounded-full flex justify-center">
-            <motion.div
-              animate={{ y: [0, 14, 0] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-              className="w-1.5 h-1.5 bg-white rounded-full mt-2"
-            />
+            </div>
+            <div className="absolute bottom-6 right-6 hidden rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-white shadow-xl backdrop-blur-md md:block lg:bottom-8 lg:right-8">
+              <div className="flex items-center gap-3">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-amber-400 text-slate-950"><MapPin size={19} /></span>
+                <span><span className="block text-xs font-semibold text-white/65">Your community</span><span className="mt-0.5 block text-sm font-bold">Mulungushi University</span></span>
+              </div>
+            </div>
           </div>
-        </motion.div>
-      </section>
+        </section>
 
-      {/* Features Section */}
-      <section className="py-24 bg-white dark:bg-gray-900">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center max-w-3xl mx-auto mb-16"
-          >
-            <span className="text-amber-500 text-sm font-semibold uppercase tracking-wider">Why Choose Us</span>
-            <h2 className="text-3xl lg:text-4xl font-bold mt-2 mb-4">Built for the Campus Community</h2>
-            <p className="text-gray-600 dark:text-gray-400">Everything you need for safe and convenient campus trading</p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="text-center group"
-              >
-                <div className={`w-20 h-20 mx-auto bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                  <FontAwesomeIcon icon={feature.icon} className="text-white text-2xl" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-500">{feature.description}</p>
-              </motion.div>
+        <section className="container-custom pb-16 sm:pb-20 lg:pb-24" aria-labelledby="categories-title">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[.16em] text-amber-600">Find your thing</p>
+              <h2 id="categories-title" className="mt-2 text-2xl font-semibold tracking-[-.04em] text-slate-950 sm:text-3xl">Explore by category</h2>
+            </div>
+            <Link to="/products" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-amber-700">All categories <ArrowRight size={16} /></Link>
+          </div>
+          <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+            {categories.map(({ label, value, icon: Icon, tone }) => (
+              <Link key={value} to={`/products?category=${value}`} className="group flex min-h-[92px] items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_3px_12px_rgba(15,23,42,.025)] transition duration-200 hover:-translate-y-1 hover:border-amber-200 hover:shadow-[0_12px_28px_rgba(15,23,42,.07)] sm:min-h-[112px] sm:gap-4 sm:p-5">
+                <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${tone} transition-transform group-hover:scale-105 sm:h-12 sm:w-12`}><Icon size={21} strokeWidth={1.8} /></span>
+                <span className="text-[13px] font-bold leading-5 text-slate-800 sm:text-sm">{label}</span>
+              </Link>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Categories Section */}
-      <section className="py-24 bg-gray-50 dark:bg-gray-800/50">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center max-w-3xl mx-auto mb-16"
-          >
-            <span className="text-amber-500 text-sm font-semibold uppercase tracking-wider">Shop by Category</span>
-            <h2 className="text-3xl lg:text-4xl font-bold mt-2 mb-4">Explore Collections</h2>
-            <p className="text-gray-600 dark:text-gray-400">Find exactly what you're looking for</p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {categories.map((category, index) => (
-              <motion.div
-                key={category.name}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="group cursor-pointer"
-              >
-                <Link to={`/products?category=${category.name.toLowerCase()}`}>
-                  <div className="relative overflow-hidden rounded-2xl aspect-[4/3]">
-                    <img 
-                      src={category.image} 
-                      alt={category.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
-                    <div className="absolute bottom-0 left-0 right-0 p-6">
-                      <h3 className="text-white text-2xl font-bold">{category.name}</h3>
-                      <p className="text-gray-200 text-sm mt-1">{category.description}</p>
-                    </div>
+        <section className="border-y border-slate-100 bg-[#fafaf9] py-16 sm:py-20 lg:py-24" aria-labelledby="featured-title">
+          <div className="container-custom">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[.16em] text-amber-600">Made for your next find</p>
+                <h2 id="featured-title" className="mt-2 text-2xl font-semibold tracking-[-.04em] text-slate-950 sm:text-3xl">A marketplace full of possibility</h2>
+                <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">Browse student listings across the categories that make everyday campus life better.</p>
+              </div>
+              <Link to="/products" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition hover:text-amber-700">Browse listings <ArrowRight size={16} /></Link>
+            </div>
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {featured.map((item) => (
+                <Link key={item.id} to={`/products?category=${item.query}`} className="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_18px_rgba(15,23,42,.035)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,23,42,.1)]">
+                  <div className="relative aspect-[1.65/1] overflow-hidden bg-slate-100">
+                    <img src={item.image} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" />
+                    <span className="absolute left-4 top-4 rounded-full border border-white/70 bg-white/90 px-3 py-1.5 text-[11px] font-bold text-slate-700 shadow-sm backdrop-blur">{item.category}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 p-5">
+                    <span><span className="block text-[15px] font-semibold leading-6 tracking-[-.02em] text-slate-900">{item.name}</span><span className="mt-1 block text-xs font-semibold text-slate-500">{item.price}</span></span>
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-600 transition group-hover:bg-amber-400 group-hover:text-slate-950"><ArrowRight size={16} /></span>
                   </div>
                 </Link>
-              </motion.div>
+              ))}
+            </div>
+            <p className="mt-4 text-xs text-slate-400">Category previews · Live listings will appear here when connected to the marketplace.</p>
+          </div>
+        </section>
+
+        <section className="container-custom py-16 sm:py-20 lg:py-24" aria-labelledby="why-title">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-amber-600">CampusEcom, closer to you</p>
+            <h2 id="why-title" className="mt-2 text-2xl font-semibold tracking-[-.04em] text-slate-950 sm:text-3xl">A more connected way to shop</h2>
+            <p className="mt-3 text-sm leading-6 text-slate-500">A simple place to discover what your campus community has to offer.</p>
+          </div>
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            {benefits.map(({ icon: Icon, title, text }, index) => (
+              <article key={title} className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-7">
+                <span className={`grid h-11 w-11 place-items-center rounded-xl ${index === 0 ? "bg-amber-50 text-amber-700" : index === 1 ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700"}`}><Icon size={20} strokeWidth={1.8} /></span>
+                <h3 className="mt-5 text-base font-bold tracking-[-.02em] text-slate-900">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-500">{text}</p>
+              </article>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Featured Products - FIXED WITH IMAGES */}
-      <section className="py-24 bg-white dark:bg-gray-900">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="flex justify-between items-center mb-12 flex-wrap gap-4"
-          >
-            <div>
-              <span className="text-amber-500 text-sm font-semibold uppercase tracking-wider">Curated Picks</span>
-              <h2 className="text-3xl lg:text-4xl font-bold mt-2">Featured Products</h2>
+        <section className="container-custom pb-16 sm:pb-20 lg:pb-24">
+          <div className="relative overflow-hidden rounded-[26px] bg-slate-950 px-6 py-10 sm:rounded-[30px] sm:px-10 sm:py-12 lg:px-14">
+            <div className="absolute -right-16 -top-32 h-80 w-80 rounded-full bg-amber-500/20 blur-3xl" />
+            <div className="relative flex flex-col justify-between gap-7 md:flex-row md:items-center">
+              <div className="max-w-xl">
+                <p className="text-xs font-bold uppercase tracking-[.16em] text-amber-300">Your next great find is nearby</p>
+                <h2 className="mt-3 text-2xl font-semibold tracking-[-.04em] text-white sm:text-3xl">Make more of campus life.</h2>
+                <p className="mt-3 text-sm leading-6 text-slate-300">Explore the marketplace or share something useful with your community.</p>
+              </div>
+              <div className="flex flex-col gap-3 min-[420px]:flex-row">
+                <Link to="/products" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 text-sm font-bold text-slate-950 transition hover:bg-amber-300">Explore listings <ArrowRight size={16} /></Link>
+                <Link to="/register?role=seller" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 px-5 text-sm font-semibold text-white transition hover:bg-white/10">Join as a seller</Link>
+              </div>
             </div>
-            <Link to="/products" className="group text-amber-500 font-semibold flex items-center gap-2 hover:gap-3 transition-all">
-              View All <FontAwesomeIcon icon={faArrowRight} className="text-sm" />
-            </Link>
-          </motion.div>
-
-          {loading ? (
-            <div className="flex justify-center items-center py-20">
-              <FontAwesomeIcon icon={faSpinner} className="animate-spin text-4xl text-amber-500" />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProducts.map((product, index) => {
-                const imageUrl = getPrimaryImage(product)
-                const productImage = imageUrl || `https://placehold.co/400x400/amber-500/white?text=${product.name?.charAt(0) || 'P'}`
-                
-                return (
-                  <motion.div
-                    key={product.id}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.1 }}
-                    className="group"
-                  >
-                    <Link to={`/products/${product.id}`} className="block">
-                      <div className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
-                        <div className="relative aspect-square overflow-hidden bg-gray-100">
-                          <img 
-                            src={productImage} 
-                            alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            onError={(e) => {
-                              e.target.src = `https://placehold.co/400x400/amber-500/white?text=${product.name?.charAt(0) || 'P'}`
-                            }}
-                          />
-                          {product.is_featured && (
-                            <span className="absolute top-2 left-2 bg-amber-500 text-white text-xs px-2 py-1 rounded-full">
-                              ⭐ Featured
-                            </span>
-                          )}
-                          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-amber-50 transition-colors">
-                              <FontAwesomeIcon icon={faHeart} className="text-gray-600 hover:text-red-500" />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1">{product.name}</h3>
-                          <p className="text-sm text-gray-500 mt-1">{product.seller_name || "Campus Seller"}</p>
-                          <div className="flex items-center gap-1 mt-2">
-                            <div className="flex gap-0.5">
-                              {[...Array(5)].map((_, i) => <FontAwesomeIcon key={i} icon={faStar} className="text-amber-400 text-xs" />)}
-                            </div>
-                            <span className="text-xs text-gray-500">({product.review_count || 0})</span>
-                          </div>
-                          <div className="flex items-center justify-between mt-3">
-                            <span className="text-xl font-bold text-amber-600">K{parseFloat(product.price || 0).toFixed(2)}</span>
-                            <button className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-sm transition-colors">
-                              Add to Cart
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  </motion.div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-24 bg-gray-50 dark:bg-gray-800/50">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center max-w-3xl mx-auto mb-16"
-          >
-            <span className="text-amber-500 text-sm font-semibold uppercase tracking-wider">Testimonials</span>
-            <h2 className="text-3xl lg:text-4xl font-bold mt-2 mb-4">Trusted by the Campus Community</h2>
-            <p className="text-gray-600 dark:text-gray-400">What our users say about CampusEcom</p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={testimonial.name}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <FontAwesomeIcon icon={faQuoteLeft} className="text-amber-500 text-2xl mb-4 opacity-50" />
-                <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">{testimonial.text}</p>
-                <div className="flex items-center gap-4">
-                  <img src={testimonial.image} alt={testimonial.name} className="w-12 h-12 rounded-full object-cover" />
-                  <div>
-                    <h4 className="font-semibold">{testimonial.name}</h4>
-                    <p className="text-sm text-gray-500">{testimonial.role}</p>
-                    <div className="flex gap-0.5 mt-1">
-                      {[...Array(testimonial.rating)].map((_, i) => <FontAwesomeIcon key={i} icon={faStar} className="text-amber-400 text-xs" />)}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
           </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-r from-amber-500 to-amber-600 relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/10"></div>
-        <div className="container-custom relative z-10 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl lg:text-5xl font-bold text-white mb-4">
-              Ready to Start Your Journey
-            </h2>
-            <p className="text-amber-100 text-lg mb-8 max-w-2xl mx-auto">
-              Join thousands of students already buying and selling on CampusEcom
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/register" className="group bg-white text-amber-600 hover:bg-gray-100 px-8 py-4 rounded-full font-semibold text-lg transition-all inline-flex items-center gap-2 shadow-lg">
-                Get Started
-                <FontAwesomeIcon icon={faRocket} className="group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link to="/products" className="group border-2 border-white text-white hover:bg-white/10 px-8 py-4 rounded-full font-semibold text-lg transition-all inline-flex items-center gap-2">
-                Browse Products
-                <FontAwesomeIcon icon={faArrowRight} className="group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+        </section>
+      </main>
     </div>
-  )
+  );
 }
-
-export default LandingPage

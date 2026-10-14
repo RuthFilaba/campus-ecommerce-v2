@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { useAuth } from "../contexts/AuthContext";
+import Navbar from "../components/Navbar";
+import Footer from "../components/home/Footer";
 
 // Public Pages
 const HomePage = lazy(() => import("../pages/HomePage"));
@@ -40,6 +42,7 @@ const AppRoutes = () => {
   return (
     <Suspense fallback={<LoadingSpinner fullScreen />}>
       <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+        <Navbar />
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<HomePage />} />
@@ -50,9 +53,9 @@ const AppRoutes = () => {
             <Route path="/register" element={<RegisterPage />} />
 
             <Route path="/profile" element={isAuthenticated ? <ProfilePage /> : <Navigate to="/login" />} />
-            <Route path="/cart" element={isAuthenticated ? <CartPage /> : <Navigate to="/login" />} />
+            <Route path="/cart" element={isAuthenticated ? <CartPage /> : <Navigate to="/login" state={{ from: { pathname: "/cart" } }} replace />} />
             <Route path="/checkout" element={isAuthenticated ? <CheckoutPage /> : <Navigate to="/login" />} />
-            <Route path="/wishlist" element={isAuthenticated ? <WishlistPage /> : <Navigate to="/login" />} />
+            <Route path="/wishlist" element={<WishlistPage />} />
             <Route path="/messages" element={isAuthenticated ? <MessagesPage /> : <Navigate to="/login" />} />
             
             <Route path="/orders" element={isAuthenticated ? <OrdersPage /> : <Navigate to="/login" />} />
@@ -68,7 +71,9 @@ const AppRoutes = () => {
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </main></div>
+        </main>
+        <Footer />
+      </div>
     </Suspense>
   );
 };

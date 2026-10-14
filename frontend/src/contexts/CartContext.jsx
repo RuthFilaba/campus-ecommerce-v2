@@ -1,58 +1,51 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react'
-import api from '../services/api'
-import { useAuth } from './AuthContext'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { readPreviewCart, toCartSummary, writePreviewCart } from "../services/previewCart";
 
-const CartContext = createContext()
+const CartContext = createContext(null);
 
 export const useCart = () => {
-  const context = useContext(CartContext)
-  if (!context) {
-    throw new Error('useCart must be used within CartProvider')
-  }
-  return context
-}
+  const context = useContext(CartContext);
+  if (!context) throw new Error("useCart must be used within CartProvider");
+  return context;
+};
 
 export const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState({ items: [], total: 0, count: 0 })
-  const [loading, setLoading] = useState(false)
-  const { isAuthenticated, token } = useAuth()
-
-  const loadCart = useCallback(async () => {
-    if (!isAuthenticated) {
-      setCart({ items: [], total: 0, count: 0 })
-      return
-    }
-    
-    setLoading(true)
-    try {
-      const response = await api.get('/cart/')
-      console.log('Cart loaded:', response.data)
-      setCart(response.data)
-    } catch (error) {
-      console.error('Failed to load cart:', error.response?.data || error.message)
-      setCart({ items: [], total: 0, count: 0 })
-    } finally {
-      setLoading(false)
-    }
-  }, [isAuthenticated])
+  const [items, setItems] = useState(() => readPreviewCart());
 
   useEffect(() => {
-    loadCart()
-  }, [loadCart, isAuthenticated, token])
+    const syncCart = () => setItems(readPreviewCart());
+    window.addEventListener("storage", syncCart);
+    return () => window.removeEventListener("storage", syncCart);
+  }, []);
 
-  const refreshCart = () => {
-    loadCart()
-  }
+  const commit = useCallback((nextItems) => {
+    writePreviewCart(nextItems);
+    setItems(nextItems);
+  }, []);
 
-  const value = {
-    cart,
-    loading,
-    refreshCart,
-  }
+  const addItem = useCallback((product, quantity = 1) => {
+    const current = readPreviewCart();
+    const found = current.find((item) => String(item.product.id) === String(product.id));
+    const next = found
+      ? current.map((item) => String(item.product.id) === String(product.id) ? { ...item, quantity: Math.min(item.quantity + quantity, product.stock || 99) } : item)
+      : [...current, { id: String(product.id), product, quantity: Math.min(quantity, product.stock || 99) }];
+    commit(next);
+  }, [commit]);
 
-  return (
-    <CartContext.Provider value={value}>
-      {children}
-    </CartContext.Provider>
-  )
-}
+  const updateQuantity = useCallback((productId, quantity) => {
+    const next = readPreviewCart()
+      .map((item) => String(item.product.id) === String(productId) ? { ...item, quantity } : item)
+      .filter((item) => item.quantity > 0);
+    commit(next);
+  }, [commit]);
+
+  const removeItem = useCallback((productId) => {
+    commit(readPreviewCart().filter((item) => String(item.product.id) !== String(productId)));
+  }, [commit]);
+
+  const clearCart = useCallback(() => commit([]), [commit]);
+  const refreshCart = useCallback(() => setItems(readPreviewCart()), []);
+  const cart = useMemo(() => toCartSummary(items), [items]);
+
+  return <CartContext.Provider value={{ cart, items, addItem, updateQuantity, removeItem, clearCart, refreshCart, loading: false }}>{children}</CartContext.Provider>;
+};
