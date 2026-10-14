@@ -38,20 +38,21 @@ const LoginPage = () => {
     
     if (result) {
       const pendingPurchase = readPendingPurchase()
-      const isSeller = result?.role === "seller" || result?.role === "admin"
-      if (!isSeller && pendingPurchase?.product && pendingPurchase.type === "add-to-cart") {
+      const isSeller = result?.role === "seller"
+      const isAdmin = result?.role === "admin"
+      if (!isSeller && !isAdmin && pendingPurchase?.product && pendingPurchase.type === "add-to-cart") {
         addItem(pendingPurchase.product, pendingPurchase.quantity)
         clearPendingPurchase()
         navigate("/cart", { replace: true })
         return
       }
-      if (!isSeller && pendingPurchase?.product && pendingPurchase.type === "buy-now") {
+      if (!isSeller && !isAdmin && pendingPurchase?.product && pendingPurchase.type === "buy-now") {
         saveDirectCheckout(pendingPurchase.product, pendingPurchase.quantity)
         clearPendingPurchase()
         navigate("/checkout", { replace: true })
         return
       }
-      const destination = location.state?.from?.pathname || (isSeller ? "/seller/dashboard" : "/")
+      const destination = location.state?.from?.pathname || (isAdmin ? "/admin/dashboard" : isSeller ? "/seller/dashboard" : "/")
       navigate(destination, { replace: true })
     }
   }
@@ -106,11 +107,12 @@ const LoginPage = () => {
             />
 
             {isPreviewAuth && (
-              <div className="grid grid-cols-2 gap-2 rounded-xl bg-amber-50 p-3">
-                <p className="col-span-2 text-[11px] font-semibold text-amber-900">Quick preview sign in</p>
+              <div className="grid grid-cols-1 gap-2 rounded-xl bg-amber-50 p-3 min-[420px]:grid-cols-3">
+                <p className="col-span-full text-[11px] font-semibold text-amber-900">Quick preview sign in</p>
                 {[
                   { label: "Test as buyer", email: "buyer@campusecom.zm" },
                   { label: "Test as seller", email: "seller@campusecom.zm" },
+                  { label: "Test as admin", email: "admin@campusecom.zm" },
                 ].map(({ label, email }) => (
                   <button
                     key={email}
@@ -124,7 +126,7 @@ const LoginPage = () => {
                     {label}
                   </button>
                 ))}
-                <p className="col-span-2 text-[10px] text-amber-800">Demo password: preview123</p>
+                <p className="col-span-full text-[10px] text-amber-800">Demo password: preview123</p>
               </div>
             )}
 

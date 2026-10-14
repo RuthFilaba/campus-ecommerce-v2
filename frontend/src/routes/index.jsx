@@ -31,12 +31,14 @@ const StoreSettingsPage = lazy(() => import("../pages/seller/SellerSettingsRoute
 const MySalesPage = lazy(() => import("../pages/seller/SellerSalesRoute"));
 const SellerOrderDetailPage = lazy(() => import("../pages/seller/SellerOrderDetailPage"));
 const SellerActiveOrdersPage = lazy(() => import("../pages/seller/SellerOrdersRoute"));
+const AdminDashboardPage = lazy(() => import("../pages/admin/AdminDashboardPage"));
 
 const AppRoutes = () => {
   const { user, isAuthenticated, loading } = useAuth();
-  const isSeller = user?.role === "seller" || user?.role === "admin";
-  const isBuyer = isAuthenticated && !isSeller;
-  const buyerRedirect = isSeller ? "/seller/dashboard" : "/login";
+  const isSeller = user?.role === "seller";
+  const isAdmin = user?.role === "admin";
+  const isBuyer = isAuthenticated && user?.role === "buyer";
+  const buyerRedirect = isSeller ? "/seller/dashboard" : isAdmin ? "/admin/dashboard" : "/login";
 
   if (loading) {
     return <LoadingSpinner fullScreen />;
@@ -63,6 +65,14 @@ const AppRoutes = () => {
             
             <Route path="/orders" element={isBuyer ? <OrdersPage /> : <Navigate to={buyerRedirect} replace />} />
             <Route path="/orders/:id" element={isBuyer ? <OrderDetailPage /> : <Navigate to={buyerRedirect} replace />} />
+
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="/admin/dashboard" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
+            <Route path="/admin/products" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
+            <Route path="/admin/orders" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
+            <Route path="/admin/customers" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
+            <Route path="/admin/coupons" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
+            <Route path="/admin/reports" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
 
             <Route path="/seller/dashboard" element={isAuthenticated && isSeller ? <SellerDashboardPage /> : <Navigate to="/" />} />
             <Route path="/seller/products" element={isAuthenticated && isSeller ? <ManageProductsPage /> : <Navigate to="/" />} />

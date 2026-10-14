@@ -44,6 +44,27 @@
   }
 }
 
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  #admin-report-print,
+  #admin-report-print * {
+    visibility: visible !important;
+  }
+
+  #admin-report-print {
+    display: block !important;
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    padding: 24px;
+    color: #0f172a;
+    background: #fff;
+  }
+}
+
 @layer utilities {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;

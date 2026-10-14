@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Banknote, Check, CheckCircle2, CreditCard, MapPin, Phone, ShieldCheck, ShoppingBag } from "lucide-react";
+import { ArrowLeft, ArrowRight, Banknote, Check, CheckCircle2, CreditCard, MapPin, Phone, ShieldCheck, ShoppingBag, Tag, X } from "lucide-react";
 import { useCart } from "../../contexts/CartContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { createPreviewOrder } from "../../services/previewOrders";
 import { toCartSummary } from "../../services/previewCart";
 import { clearDirectCheckout, readDirectCheckout } from "../../services/purchaseFlow";
 import PremiumBreadcrumb from "../../components/common/PremiumBreadcrumb";
 import { getProductPrimaryImage } from "../../utils/productImages";
+import { validateAdminPreviewCoupon } from "../../services/adminPreview";
 
 const meetupLocations = [
   "Campus library main entrance",
@@ -46,6 +48,7 @@ function StepIndicator({ activeStep }) {
 
 export default function CheckoutPage() {
   const { cart, clearCart } = useCart();
+  const { user } = useAuth();
   const [directItems] = useState(() => readDirectCheckout());
   const isDirectPurchase = directItems.length > 0;
   const checkoutCart = useMemo(() => isDirectPurchase ? toCartSummary(directItems) : cart, [directItems, isDirectPurchase, cart]);
@@ -53,10 +56,37 @@ export default function CheckoutPage() {
   const [meetupLocation, setMeetupLocation] = useState("");
   const [meetupNotes, setMeetupNotes] = useState("");
   const [paymentPreference, setPaymentPreference] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponError, setCouponError] = useState("");
   const [order, setOrder] = useState(null);
 
+  const couponDiscount = appliedCoupon?.discount_amount || 0;
+  const checkoutTotal = Math.max(0, Number(checkoutCart.total) - couponDiscount);
+  const hasUnavailableItem = checkoutCart.items.some(({ product, quantity }) => Number(product.stock ?? 0) < Number(quantity));
+  const applyCoupon = () => {
+    const result = validateAdminPreviewCoupon(couponCode, Number(checkoutCart.total), user?.email || "");
+    if (result.error) {
+      setAppliedCoupon(null);
+      setCouponError(result.error);
+      return;
+    }
+    setAppliedCoupon(result);
+    setCouponError("");
+  };
+
   const placePreviewOrder = () => {
-    const created = createPreviewOrder(checkoutCart, { meetupLocation, meetupNotes: meetupNotes.trim(), paymentPreference });
+    if (hasUnavailableItem) return;
+    const created = createPreviewOrder(checkoutCart, {
+      meetupLocation,
+      meetupNotes: meetupNotes.trim(),
+      paymentPreference,
+      buyerEmail: user?.email || "",
+      buyerName: `${user?.first_name || ""} ${user?.last_name || ""}`.trim(),
+      couponCode: appliedCoupon?.coupon.code || "",
+      discount: couponDiscount,
+      total: checkoutTotal,
+    });
     setOrder(created);
     if (isDirectPurchase) clearDirectCheckout();
     else clearCart();
@@ -82,6 +112,7 @@ export default function CheckoutPage() {
             <section className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-7">
               {step === 1 ? (
                 <>
+                  {hasUnavailableItem && <div role="alert" className="mb-5 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-800">One or more items no longer have enough stock. Return to the cart and update your quantities.</div>}
                   <div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700"><MapPin size={18} /></span><div><h2 className="text-base font-bold text-slate-900">Arrange your campus meetup</h2><p className="mt-1 text-xs leading-5 text-slate-500">Choose a convenient public place to meet the seller.</p></div></div>
                   <div className="mt-6 grid gap-5 sm:grid-cols-2">
                     <label className="block"><span className="mb-2 block text-xs font-bold text-slate-700">Meetup location <span className="text-rose-500">*</span></span><select required value={meetupLocation} onChange={(event) => setMeetupLocation(event.target.value)} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10"><option value="">Choose a campus location</option>{meetupLocations.map((location) => <option key={location} value={location}>{location}</option>)}</select></label>
@@ -95,7 +126,8 @@ export default function CheckoutPage() {
                   <div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-700"><CreditCard size={18} /></span><div><h2 className="text-base font-bold text-slate-900">Choose a payment preference</h2><p className="mt-1 text-xs leading-5 text-slate-500">This records your preferred way to pay. No payment will be processed in preview mode.</p></div></div>
                   <fieldset className="mt-6 grid gap-3 sm:grid-cols-2"><legend className="sr-only">Payment preference</legend>{paymentChoices.map(({ id, label, detail, icon: Icon }) => <label key={id} className={`flex cursor-pointer gap-3 rounded-xl border p-4 transition ${paymentPreference === id ? "border-amber-400 bg-amber-50/70 ring-2 ring-amber-400/15" : "border-slate-200 hover:border-slate-300"}`}><input type="radio" name="payment" value={id} checked={paymentPreference === id} onChange={() => setPaymentPreference(id)} className="sr-only" /><span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${paymentPreference === id ? "bg-amber-200 text-amber-900" : "bg-slate-100 text-slate-600"}`}><Icon size={17} /></span><span className="min-w-0"><span className="block text-xs font-bold text-slate-900">{label}</span><span className="mt-1 block text-[11px] leading-4 text-slate-500">{detail}</span></span><span className={`ml-auto mt-1 grid h-4 w-4 shrink-0 place-items-center rounded-full border ${paymentPreference === id ? "border-amber-500 bg-amber-500 text-white" : "border-slate-300"}`}>{paymentPreference === id && <Check size={11} />}</span></label>)}</fieldset>
                   <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50/70 p-4"><p className="text-xs font-bold text-amber-950">Preview checkout</p><p className="mt-1 text-xs leading-5 text-amber-900/80">Placing this preview order only saves it to your device. No seller notification, transfer, card charge, or payment confirmation will occur.</p></div>
-                  <div className="mt-7 flex items-center justify-between border-t border-slate-100 pt-5"><button type="button" onClick={() => setStep(1)} className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 transition hover:text-slate-900"><ArrowLeft size={15} /> Meetup details</button><button type="button" disabled={!paymentPreference} onClick={placePreviewOrder} className="inline-flex h-11 items-center gap-2 rounded-xl bg-amber-400 px-4 text-sm font-bold text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40">Place preview order <ArrowRight size={15} /></button></div>
+                  {hasUnavailableItem && <div role="alert" className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-800">One or more items no longer have enough stock. Return to the cart and update your quantities.</div>}
+                  <div className="mt-7 flex items-center justify-between border-t border-slate-100 pt-5"><button type="button" onClick={() => setStep(1)} className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 transition hover:text-slate-900"><ArrowLeft size={15} /> Meetup details</button><button type="button" disabled={!paymentPreference || hasUnavailableItem} onClick={placePreviewOrder} className="inline-flex h-11 items-center gap-2 rounded-xl bg-amber-400 px-4 text-sm font-bold text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40">Place preview order <ArrowRight size={15} /></button></div>
                 </>
               )}
             </section>
@@ -104,8 +136,9 @@ export default function CheckoutPage() {
               <h2 className="text-sm font-bold text-slate-900">{isDirectPurchase ? "Buy now summary" : "Order summary"} <span className="ml-1 font-medium text-slate-400">({checkoutCart.count})</span></h2>
               <ul className="mt-4 max-h-[280px] space-y-4 overflow-y-auto pr-1">{checkoutCart.items.map(({ product, quantity }) => <li key={product.id} className="flex gap-3"><div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100"><img src={getProductPrimaryImage(product)} alt="" className="h-full w-full object-cover" /><span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-slate-900 px-1 text-[9px] font-bold text-white">{quantity}</span></div><div className="min-w-0 flex-1"><p className="line-clamp-2 text-xs font-semibold leading-4 text-slate-800">{product.name}</p><p className="mt-1 text-[10px] text-slate-400">{product.seller_name}</p></div><span className="shrink-0 text-xs font-bold text-slate-800">K{(Number(product.price) * quantity).toLocaleString("en-ZM")}</span></li>)}</ul>
               <div className="my-4 h-px bg-slate-100" />
-              <div className="space-y-2.5 text-xs"><div className="flex justify-between text-slate-500"><span>Subtotal</span><span className="font-semibold text-slate-800">K{Number(checkoutCart.total).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div><div className="flex justify-between text-slate-500"><span>Meetup</span><span className="font-semibold text-slate-800">No delivery fee</span></div></div>
-              <div className="mt-4 flex justify-between border-t border-slate-100 pt-4"><span className="text-sm font-bold text-slate-800">Total</span><span className="text-lg font-bold tracking-tight text-slate-950">K{Number(checkoutCart.total).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div>
+              <form onSubmit={(event) => { event.preventDefault(); applyCoupon(); }} className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-3"><label htmlFor="checkout-coupon" className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-slate-700"><Tag size={14} /> Coupon code</label><div className="flex gap-2"><input id="checkout-coupon" value={couponCode} onChange={(event) => { setCouponCode(event.target.value); setCouponError(""); }} disabled={!!appliedCoupon} placeholder="Enter code" className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-xs uppercase outline-none focus:border-amber-400 disabled:text-slate-500" /><button type="submit" disabled={!!appliedCoupon || !couponCode.trim()} className="rounded-lg bg-slate-950 px-3 text-xs font-bold text-white disabled:opacity-40">Apply</button>{appliedCoupon && <button type="button" onClick={() => { setAppliedCoupon(null); setCouponCode(""); }} aria-label="Remove coupon" className="grid h-10 w-9 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500"><X size={15} /></button>}</div>{couponError && <p role="alert" className="mt-2 text-[11px] font-medium text-rose-700">{couponError}</p>}{appliedCoupon && <p role="status" className="mt-2 text-[11px] font-semibold text-emerald-700">{appliedCoupon.coupon.code} applied</p>}</form>
+              <div className="mt-4 space-y-2.5 text-xs"><div className="flex justify-between text-slate-500"><span>Subtotal</span><span className="font-semibold text-slate-800">K{Number(checkoutCart.total).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div>{couponDiscount > 0 && <div className="flex justify-between text-emerald-700"><span>Coupon discount</span><span className="font-semibold">−K{couponDiscount.toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div>}<div className="flex justify-between text-slate-500"><span>Meetup</span><span className="font-semibold text-slate-800">No delivery fee</span></div></div>
+              <div className="mt-4 flex justify-between border-t border-slate-100 pt-4"><span className="text-sm font-bold text-slate-800">Total</span><span className="text-lg font-bold tracking-tight text-slate-950">K{checkoutTotal.toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div>
             </aside>
           </div>
         ) : (
@@ -114,7 +147,7 @@ export default function CheckoutPage() {
             <p className="mt-5 text-[10px] font-bold uppercase tracking-[.15em] text-emerald-700">Preview order saved</p>
             <h2 className="mt-2 text-2xl font-semibold tracking-[-.04em] text-slate-950">Your order preview is ready.</h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">This is a local preview only. Nothing was sent to a seller, and no payment was taken.</p>
-            <div className="mx-auto mt-6 max-w-sm rounded-xl bg-slate-50 p-4 text-left"><div className="flex justify-between gap-3 text-xs"><span className="text-slate-500">Preview reference</span><span className="font-mono font-bold text-slate-900">{order?.id}</span></div><div className="mt-3 flex justify-between gap-3 text-xs"><span className="text-slate-500">Meetup location</span><span className="text-right font-semibold text-slate-800">{order?.meetupLocation}</span></div><div className="mt-3 flex justify-between gap-3 text-xs"><span className="text-slate-500">Payment preference</span><span className="text-right font-semibold text-slate-800">{paymentChoices.find((item) => item.id === order?.paymentPreference)?.label}</span></div><div className="mt-3 flex justify-between gap-3 border-t border-slate-200 pt-3 text-xs"><span className="font-semibold text-slate-700">Order total</span><span className="font-bold text-slate-950">K{Number(order?.subtotal || 0).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div></div>
+            <div className="mx-auto mt-6 max-w-sm rounded-xl bg-slate-50 p-4 text-left"><div className="flex justify-between gap-3 text-xs"><span className="text-slate-500">Preview reference</span><span className="font-mono font-bold text-slate-900">{order?.id}</span></div><div className="mt-3 flex justify-between gap-3 text-xs"><span className="text-slate-500">Meetup location</span><span className="text-right font-semibold text-slate-800">{order?.meetupLocation}</span></div><div className="mt-3 flex justify-between gap-3 text-xs"><span className="text-slate-500">Payment preference</span><span className="text-right font-semibold text-slate-800">{paymentChoices.find((item) => item.id === order?.paymentPreference)?.label}</span></div>{order?.couponCode && <div className="mt-3 flex justify-between gap-3 text-xs"><span className="text-slate-500">Coupon · {order.couponCode}</span><span className="font-semibold text-emerald-700">−K{Number(order.discount).toFixed(2)}</span></div>}<div className="mt-3 flex justify-between gap-3 border-t border-slate-200 pt-3 text-xs"><span className="font-semibold text-slate-700">Order total</span><span className="font-bold text-slate-950">K{Number(order?.total ?? order?.subtotal ?? 0).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div></div>
             <div className="mt-7 flex flex-col justify-center gap-3 min-[440px]:flex-row"><Link to="/orders" className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-bold text-white transition hover:bg-slate-800">View order history <ArrowRight size={15} /></Link><Link to="/products" className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Continue exploring</Link></div>
           </section>
         )}

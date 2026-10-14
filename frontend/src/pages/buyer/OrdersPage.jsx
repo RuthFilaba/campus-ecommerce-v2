@@ -43,7 +43,7 @@ export default function OrdersPage() {
                 </div>
                 <div className="grid gap-3 border-t border-slate-100 bg-white px-4 py-4 text-xs sm:grid-cols-2 sm:px-6">
                   <div className="flex items-start gap-2 text-slate-600"><MapPin size={14} className="mt-0.5 shrink-0 text-amber-700" /><span><span className="font-semibold text-slate-800">Meetup</span><br />{order.meetupLocation}{order.meetupNotes ? ` · ${order.meetupNotes}` : ""}</span></div>
-                  <div className="flex items-center justify-between gap-3 sm:justify-end"><span className="text-slate-500">{paymentLabels[order.paymentPreference] || "Payment preference saved"}</span><span className="font-bold text-slate-950">Total K{Number(order.subtotal).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div>
+                  <div className="flex items-center justify-between gap-3 sm:justify-end"><span className="text-slate-500">{paymentLabels[order.paymentPreference] || "Payment preference saved"}</span><span className="font-bold text-slate-950">Total K{Number(order.total ?? order.subtotal).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div>
                 </div>
               </li>
             ))}

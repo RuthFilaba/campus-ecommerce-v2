@@ -25,7 +25,7 @@ function userFromRegistration(data) {
     last_name: data.last_name.trim(),
     full_name: `${data.first_name.trim()} ${data.last_name.trim()}`,
     phone: data.phone || '',
-    role: data.role || 'buyer',
+    role: data.role === 'seller' ? 'seller' : 'buyer',
     is_preview: true,
   }
 }
@@ -38,6 +38,7 @@ export const login = async (email, password) => {
 
   const normalizedEmail = email.trim().toLowerCase()
   const registeredUser = readUsers().find((user) => user.email === normalizedEmail)
+  if (registeredUser?.is_active === false) throw new Error('This preview account is paused. Contact an administrator.')
   const fallbackName = normalizedEmail.split('@')[0].replace(/[._-]+/g, ' ')
   const user = registeredUser || {
     id: `preview-${normalizedEmail}`,
@@ -45,7 +46,7 @@ export const login = async (email, password) => {
     first_name: fallbackName,
     last_name: '',
     full_name: fallbackName,
-    role: normalizedEmail === 'seller@campusecom.zm' ? 'seller' : 'buyer',
+    role: normalizedEmail === 'admin@campusecom.zm' ? 'admin' : normalizedEmail === 'seller@campusecom.zm' ? 'seller' : 'buyer',
     is_preview: true,
   }
   localStorage.setItem(SESSION_KEY, JSON.stringify(user))

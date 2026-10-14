@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check, Heart, MapPin, Minus, Plus, ShieldCheck, ShoppingBag, Store } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, ArrowRight, Check, Heart, MapPin, Minus, Plus, ShieldCheck, ShoppingBag, Star, Store } from "lucide-react";
 import toast from "react-hot-toast";
 import { useCart } from "../contexts/CartContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -11,24 +11,36 @@ import PremiumBreadcrumb from "../components/common/PremiumBreadcrumb";
 import { isPreviewAuth } from "../services/auth";
 import { readAllPreviewSellerProducts } from "../services/previewSellerData";
 import { getProductImages } from "../utils/productImages";
+import { canReviewPreviewProduct, createPreviewReview, readPreviewReviews } from "../services/previewReviews";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const { addItem } = useCart();
   const { isAuthenticated, user } = useAuth();
-  const isSeller = user?.role === "seller" || user?.role === "admin";
+  const isSeller = user?.role === "seller";
+  const isAdmin = user?.role === "admin";
   const catalogue = useMemo(() => [
     ...previewProducts,
-    ...(isPreviewAuth ? readAllPreviewSellerProducts() : []),
+    ...(isPreviewAuth ? readAllPreviewSellerProducts().filter((item) => item.is_active !== false) : []),
   ], []);
   const product = catalogue.find((item) => String(item.id) === String(id));
+  const productId = product?.id;
   const [selectedImage, setSelectedImage] = useState("");
   const productImages = getProductImages(product);
   const activeImage = productImages.includes(selectedImage) ? selectedImage : productImages[0];
   const [quantity, setQuantity] = useState(1);
   const [saved, setSaved] = useState(() => product ? readPreviewWishlist().includes(product.id) : false);
+  const [reviews, setReviews] = useState(() => product ? readPreviewReviews(product.id) : []);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+
+  useEffect(() => {
+    setReviews(productId ? readPreviewReviews(productId) : []);
+    setSaved(productId ? readPreviewWishlist().includes(productId) : false);
+    setReviewRating(5);
+    setReviewComment("");
+  }, [productId]);
 
   const related = useMemo(() => catalogue.filter((item) => item.category === product?.category && item.id !== product?.id).slice(0, 3), [catalogue, product]);
 
@@ -73,6 +85,29 @@ export default function ProductDetailPage() {
     navigate("/checkout");
   };
 
+  const submitReview = (event) => {
+    event.preventDefault();
+    if (!user?.email || !reviewComment.trim()) return;
+    const result = createPreviewReview({
+      productId: product.id,
+      buyerEmail: user.email,
+      buyerName: user.first_name || "Campus buyer",
+      rating: reviewRating,
+      comment: reviewComment,
+    });
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    setReviews(readPreviewReviews(product.id));
+    setReviewComment("");
+    toast.success("Your review has been saved to this preview.");
+  };
+
+  const buyerCanReview = user?.role === "buyer" && canReviewPreviewProduct(product.id, user.email);
+  const alreadyReviewed = reviews.some((review) => review.buyerEmail === user?.email?.toLowerCase());
+  const averageRating = reviews.length ? reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length : Number(product.rating || 0);
+
   return (
     <div className="min-h-screen bg-[#fafaf9] pb-16">
       <div className="container-custom pt-6 sm:pt-8">
@@ -88,7 +123,7 @@ export default function ProductDetailPage() {
             {productImages.length > 1 && <div className="mt-3 flex gap-2 overflow-x-auto px-1">{productImages.map((image, index) => <button key={`${product.id}-image-${index}`} type="button" onClick={() => setSelectedImage(image)} aria-label={`Show product image ${index + 1}`} aria-pressed={activeImage === image} className={`h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 transition ${activeImage === image ? "border-amber-400" : "border-transparent opacity-70 hover:opacity-100"}`}><img src={image} alt="" className="h-full w-full object-cover" /></button>)}</div>}
             <div className="flex items-center justify-between gap-3 px-2 pb-1 pt-3 text-xs text-slate-500 sm:px-3">
               <span>Marketplace preview listing</span>
-              {!isSeller && <button type="button" onClick={toggleSaved} aria-pressed={saved} className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 font-semibold transition ${saved ? "text-rose-600" : "text-slate-600 hover:bg-slate-100"}`}><Heart size={14} fill={saved ? "currentColor" : "none"} /> {saved ? "Saved" : "Save item"}</button>}
+              {!isSeller && !isAdmin && <button type="button" onClick={toggleSaved} aria-pressed={saved} className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 font-semibold transition ${saved ? "text-rose-600" : "text-slate-600 hover:bg-slate-100"}`}><Heart size={14} fill={saved ? "currentColor" : "none"} /> {saved ? "Saved" : "Save item"}</button>}
             </div>
           </div>
 
@@ -108,7 +143,7 @@ export default function ProductDetailPage() {
               <div className="rounded-xl border border-slate-200/80 bg-white p-3.5"><span className="block text-[10px] font-bold uppercase tracking-[.1em] text-slate-400">Availability</span><span className="mt-1 block text-sm font-semibold text-slate-800">{product.stock} {product.stock === 1 ? "item" : "items"} available</span></div>
             </div>
 
-            {!isSeller ? <div className="mt-6 flex flex-wrap items-center gap-3">
+            {!isSeller && !isAdmin ? <div className="mt-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex h-12 items-center rounded-xl border border-slate-200 bg-white p-1">
                 <button type="button" aria-label="Decrease quantity" disabled={quantity <= 1} onClick={() => setQuantity((value) => Math.max(1, value - 1))} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"><Minus size={15} /></button>
                 <span className="w-8 text-center text-sm font-bold text-slate-900" aria-live="polite">{quantity}</span>
@@ -117,7 +152,7 @@ export default function ProductDetailPage() {
               <button type="button" onClick={handleAddToCart} disabled={!product.stock} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-400/30 disabled:cursor-not-allowed disabled:opacity-50"><ShoppingBag size={17} /> Add to cart</button>
               <button type="button" onClick={handleBuyNow} disabled={!product.stock} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/30 disabled:cursor-not-allowed disabled:opacity-50"><ArrowRight size={16} /> Buy now</button>
               <Link to="/cart" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">View cart <ArrowRight size={15} /></Link>
-            </div> : <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-slate-900">Seller view</p><p className="mt-1 text-xs leading-5 text-slate-600">Shopping actions are hidden while you are in your seller account.</p></div><Link to="/seller/dashboard" className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-xs font-bold text-white transition hover:bg-slate-800">Open seller workspace <ArrowRight size={14} /></Link></div>}
+            </div> : <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-slate-900">{isAdmin ? "Administrator view" : "Seller view"}</p><p className="mt-1 text-xs leading-5 text-slate-600">Shopping actions are reserved for buyer accounts.</p></div><Link to={isAdmin ? "/admin/dashboard" : "/seller/dashboard"} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-xs font-bold text-white transition hover:bg-slate-800">Open {isAdmin ? "admin" : "seller"} workspace <ArrowRight size={14} /></Link></div>}
 
             <div className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5">
               <div className="flex items-start gap-3">
@@ -132,6 +167,12 @@ export default function ProductDetailPage() {
             <p className="mt-4 text-center text-[11px] leading-5 text-slate-400">Preview mode · Sample item and seller information. Cart changes are stored on this device.</p>
           </div>
         </div>
+
+        <section className="mt-12 border-t border-slate-200 pt-9" aria-labelledby="reviews-title">
+          <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[.14em] text-amber-700">Buyer feedback</p><h2 id="reviews-title" className="mt-1.5 text-xl font-semibold tracking-tight text-slate-950">Reviews</h2></div><div className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700"><Star size={16} className="fill-amber-400 text-amber-500" />{averageRating ? averageRating.toFixed(1) : "New"}<span className="font-normal text-slate-400">({reviews.length} {reviews.length === 1 ? "review" : "reviews"})</span></div></div>
+          {buyerCanReview && !alreadyReviewed ? <form onSubmit={submitReview} className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"><p className="text-sm font-semibold text-slate-900">You bought this item. How was it?</p><div className="mt-3 flex items-center gap-1" role="group" aria-label="Choose a rating from one to five stars">{[1, 2, 3, 4, 5].map((value) => <button key={value} type="button" onClick={() => setReviewRating(value)} aria-label={`${value} ${value === 1 ? "star" : "stars"}`} aria-pressed={reviewRating === value} className="rounded p-1 text-amber-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"><Star size={19} className={value <= reviewRating ? "fill-amber-400" : "text-slate-300"} /></button>)}</div><label htmlFor="product-review" className="mt-3 block text-xs font-semibold text-slate-700">Your review<textarea id="product-review" required maxLength={800} value={reviewComment} onChange={(event) => setReviewComment(event.target.value)} rows={3} placeholder="Share helpful details about the product and meetup…" className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" /></label><button type="submit" className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-xs font-bold text-white transition hover:bg-slate-800">Post review</button></form> : alreadyReviewed ? <p className="mt-4 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">You have reviewed this product.</p> : <p className="mt-4 rounded-xl bg-white p-4 text-sm text-slate-500">Only buyers with a delivered order can leave a review.</p>}
+          {reviews.length > 0 ? <ul className="mt-4 grid gap-3 sm:grid-cols-2">{reviews.map((review) => <li key={review.id} className="rounded-2xl border border-slate-200/80 bg-white p-4"><div className="flex items-center justify-between gap-3"><p className="text-sm font-semibold text-slate-900">{review.buyerName}</p><time className="text-[10px] text-slate-400">{new Date(review.createdAt).toLocaleDateString()}</time></div><div className="mt-2 flex gap-0.5" aria-label={`${review.rating} out of 5 stars`}>{[1, 2, 3, 4, 5].map((value) => <Star key={value} size={13} className={value <= review.rating ? "fill-amber-400 text-amber-500" : "text-slate-200"} />)}</div><p className="mt-2 text-sm leading-6 text-slate-600">{review.comment}</p></li>)}</ul> : <p className="mt-4 rounded-xl border border-dashed border-slate-200 p-5 text-sm text-slate-500">No reviews yet. Be the first eligible buyer to share feedback.</p>}
+        </section>
 
         {related.length > 0 && (
           <section className="mt-14 border-t border-slate-200 pt-9" aria-labelledby="related-title">

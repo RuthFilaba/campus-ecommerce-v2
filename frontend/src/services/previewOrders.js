@@ -31,10 +31,25 @@ export function createPreviewOrder(cart, details) {
     items: cart.items.map(({ product, quantity }) => ({ product, quantity })),
     itemCount: cart.count,
     subtotal: cart.total,
+    discount: Number(details.discount) || 0,
+    total: Number.isFinite(Number(details.total)) ? Number(details.total) : cart.total,
+    couponCode: details.couponCode || "",
     meetupLocation: details.meetupLocation,
     meetupNotes: details.meetupNotes,
     paymentPreference: details.paymentPreference,
+    buyerEmail: details.buyerEmail || "",
+    buyerName: details.buyerName || "",
   };
   window.localStorage.setItem(ORDERS_KEY, JSON.stringify([order, ...orders]));
   return order;
+}
+
+export function updatePreviewOrderStatus(orderId, status) {
+  const orders = readPreviewOrders();
+  const updated = orders.map((order) => String(order.id) === String(orderId)
+    ? { ...order, status, sellerStatuses: {} }
+    : order);
+  if (!orders.some((order) => String(order.id) === String(orderId))) return false;
+  window.localStorage.setItem(ORDERS_KEY, JSON.stringify(updated));
+  return true;
 }
