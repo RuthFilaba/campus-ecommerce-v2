@@ -1,113 +1,54 @@
-import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
-import orderService from "../../services/orderService";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSpinner, faEye, faClock, faCheckCircle, faTruck, faMapMarkerAlt } from "@fortawesome/free-solid-svg-icons";
-import toast from "react-hot-toast";
+import { ArrowRight, Clock3, MapPin, PackageCheck, ShoppingBag } from "lucide-react";
+import { readPreviewOrders } from "../../services/previewOrders";
 
-const OrdersPage = () => {
-  const { user, isAuthenticated } = useAuth();
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+const paymentLabels = {
+  "meetup-cash": "Cash at meetup",
+  "mtn-momo": "MTN Mobile Money",
+  "airtel-money": "Airtel Money",
+  "bank-transfer": "Bank transfer",
+};
 
-  useEffect(() => {
-    if (isAuthenticated && user?.role !== "seller") {
-      fetchOrders();
-    }
-  }, [isAuthenticated, user]);
-
-  const fetchOrders = async () => {
-    try {
-      const data = await orderService.getMyOrders();
-      setOrders(data.results || data);
-    } catch (error) {
-      console.error("Failed to fetch orders:", error);
-      toast.error("Failed to load orders");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: "bg-yellow-100 text-yellow-800",
-      processing: "bg-blue-100 text-blue-800",
-      ready: "bg-green-100 text-green-800",
-      completed: "bg-gray-100 text-gray-800",
-      cancelled: "bg-red-100 text-red-800"
-    };
-    return colors[status] || "bg-gray-100";
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <FontAwesomeIcon icon={faSpinner} className="animate-spin text-4xl text-amber-500" />
-      </div>
-    );
-  }
+export default function OrdersPage() {
+  const orders = readPreviewOrders();
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-12">
-      <div className="container-custom max-w-4xl">
-        <h1 className="text-2xl md:text-3xl font-bold mb-8">My Orders</h1>
+    <div className="min-h-screen bg-[#fafaf9] pb-16">
+      <div className="container-custom pt-8 sm:pt-10">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-slate-400"><Link to="/" className="transition hover:text-slate-700">Home</Link><span>/</span><span className="text-slate-700">Order history</span></nav>
+        <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
+          <div><p className="text-[10px] font-bold uppercase tracking-[.15em] text-amber-700">Your campus purchases</p><h1 className="mt-1 text-3xl font-semibold tracking-[-.05em] text-slate-950">Order history</h1><p className="mt-2 text-sm text-slate-500">Review the order previews saved on this device.</p></div>
+          <Link to="/products" className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 transition hover:text-amber-700">Explore marketplace <ArrowRight size={15} /></Link>
+        </div>
 
         {orders.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl">
-            <p className="text-gray-500">You haven't placed any orders yet</p>
-            <Link to="/products" className="inline-block mt-4 text-amber-500 hover:text-amber-600">
-              Start Shopping
-            </Link>
-          </div>
+          <section className="mt-7 rounded-2xl border border-slate-200/80 bg-white px-5 py-14 text-center sm:py-16">
+            <span className="mx-auto grid h-16 w-16 place-items-center rounded-[22px] bg-amber-50 text-amber-700"><ShoppingBag size={25} /></span>
+            <h2 className="mt-5 text-xl font-semibold tracking-tight text-slate-950">No orders yet</h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">When you place a preview order, it will appear here with its items and meetup details.</p>
+            <Link to="/products" className="mt-6 inline-flex h-11 items-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-bold text-white transition hover:bg-slate-800">Browse listings <ArrowRight size={15} /></Link>
+          </section>
         ) : (
-          <div className="space-y-4">
+          <ul className="mt-7 space-y-4">
             {orders.map((order) => (
-              <div key={order.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Order #{order.id}</p>
-                    <p className="font-semibold">{order.product_name}</p>
-                    <p className="text-sm">Quantity: {order.quantity}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(order.status)}`}>
-                      {order.status_display}
-                    </span>
-                    <p className="text-lg font-bold text-amber-600 mt-2">K{order.total_price}</p>
-                  </div>
+              <li key={order.id} className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/70 px-4 py-4 sm:px-6">
+                  <div><p className="font-mono text-xs font-bold text-slate-900">{order.id}</p><p className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500"><Clock3 size={12} />{new Date(order.createdAt).toLocaleString("en-ZM", { dateStyle: "medium", timeStyle: "short" })}</p></div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-[10px] font-bold text-amber-800"><PackageCheck size={13} />{order.status}</span>
                 </div>
-
-                {order.meetup_location && (
-                  <div className="border-t pt-3 mt-3 flex items-center gap-2 text-sm text-gray-600">
-                    <FontAwesomeIcon icon={faMapMarkerAlt} className="text-amber-500" />
-                    <span>Meet at: {order.meetup_location}</span>
-                  </div>
-                )}
-
-                {order.meetup_time && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                    <FontAwesomeIcon icon={faClock} className="text-amber-500" />
-                    <span>Meetup: {new Date(order.meetup_time).toLocaleString()}</span>
-                  </div>
-                )}
-
-                <div className="flex gap-3 mt-4">
-                  <Link
-                    to={`/orders/${order.id}`}
-                    className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2 rounded-lg text-center"
-                  >
-                    <FontAwesomeIcon icon={faEye} className="mr-2" />
-                    Track Order
-                  </Link>
+                <div className="divide-y divide-slate-100 px-4 sm:px-6">
+                  {order.items.map(({ product, quantity }, index) => <div key={`${order.id}-${product.id}-${index}`} className="flex items-center gap-3 py-4"><div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100"><img src={product.image_url} alt="" className="h-full w-full object-cover" /></div><div className="min-w-0 flex-1"><Link to={`/products/${product.id}`} className="line-clamp-2 text-sm font-semibold text-slate-900 transition hover:text-amber-700">{product.name}</Link><p className="mt-1 text-xs text-slate-500">{product.seller_name} · Qty {quantity}</p></div><span className="shrink-0 text-sm font-bold text-slate-900">K{(Number(product.price) * quantity).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div>)}
                 </div>
-              </div>
+                <div className="grid gap-3 border-t border-slate-100 bg-white px-4 py-4 text-xs sm:grid-cols-2 sm:px-6">
+                  <div className="flex items-start gap-2 text-slate-600"><MapPin size={14} className="mt-0.5 shrink-0 text-amber-700" /><span><span className="font-semibold text-slate-800">Meetup</span><br />{order.meetupLocation}{order.meetupNotes ? ` · ${order.meetupNotes}` : ""}</span></div>
+                  <div className="flex items-center justify-between gap-3 sm:justify-end"><span className="text-slate-500">{paymentLabels[order.paymentPreference] || "Payment preference saved"}</span><span className="font-bold text-slate-950">Total K{Number(order.subtotal).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div>
+                </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
+        <p className="mt-5 text-center text-[11px] text-slate-400">Preview order history is stored locally on this device. Seller updates will be available after backend integration.</p>
       </div>
     </div>
   );
-};
-
-export default OrdersPage;
+}

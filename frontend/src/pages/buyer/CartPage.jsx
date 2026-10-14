@@ -55,8 +55,7 @@ export default function CartPage() {
             <div className="mt-5 space-y-3 text-sm"><div className="flex justify-between text-slate-500"><span>Items ({cart.count})</span><span className="font-semibold text-slate-800">K{Number(cart.total).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div><div className="flex justify-between text-slate-500"><span>Campus meetup</span><span className="font-semibold text-slate-800">Arrange with seller</span></div></div>
             <div className="my-5 h-px bg-slate-100" />
             <div className="flex items-end justify-between"><span className="text-sm font-semibold text-slate-700">Subtotal</span><span className="text-xl font-bold tracking-tight text-slate-950">K{Number(cart.total).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div>
-            <button type="button" disabled className="mt-5 inline-flex h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-slate-200 px-4 text-sm font-bold text-slate-500" title="Checkout will be added in the next frontend step">Checkout <ArrowRight size={16} /></button>
-            <p className="mt-2 text-center text-[11px] text-slate-400">Checkout setup is the next frontend step.</p>
+            <Link to="/checkout" className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 text-sm font-bold text-slate-950 transition hover:bg-amber-300">Continue to checkout <ArrowRight size={16} /></Link>
             <div className="mt-5 flex items-start gap-2.5 rounded-xl bg-emerald-50/80 p-3 text-[11px] leading-5 text-emerald-800"><ShieldCheck size={15} className="mt-0.5 shrink-0 text-emerald-700" /><span>Preview cart is saved on this device. No order or payment is placed.</span></div>
           </aside>
         </div>

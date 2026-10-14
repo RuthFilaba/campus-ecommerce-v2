@@ -54,7 +54,7 @@ const AppRoutes = () => {
 
             <Route path="/profile" element={isAuthenticated ? <ProfilePage /> : <Navigate to="/login" />} />
             <Route path="/cart" element={isAuthenticated ? <CartPage /> : <Navigate to="/login" state={{ from: { pathname: "/cart" } }} replace />} />
-            <Route path="/checkout" element={isAuthenticated ? <CheckoutPage /> : <Navigate to="/login" />} />
+            <Route path="/checkout" element={isAuthenticated ? <CheckoutPage /> : <Navigate to="/login" state={{ from: { pathname: "/checkout" } }} replace />} />
             <Route path="/wishlist" element={<WishlistPage />} />
             <Route path="/messages" element={isAuthenticated ? <MessagesPage /> : <Navigate to="/login" />} />
             
