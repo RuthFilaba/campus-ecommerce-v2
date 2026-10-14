@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowRight, BarChart3, ClipboardList, Heart, LogOut, Menu, MessageCircle,
@@ -32,6 +32,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const menuRootRef = useRef(null);
   const [search, setSearch] = useState("");
   const isSeller = user?.role === "seller" || user?.role === "admin";
   const cartCount = (cart?.items || []).reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
@@ -40,6 +41,24 @@ export default function Navbar() {
     : 0;
   const closeMobile = () => setMobileOpen(false);
   const active = (path) => location.pathname === path || location.pathname.startsWith(`${path}/`);
+
+  useEffect(() => {
+    if (!mobileOpen) return undefined;
+    const closeOnOutsideClick = (event) => {
+      if (!menuRootRef.current?.contains(event.target)) closeMobile();
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") closeMobile();
+    };
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [mobileOpen]);
+
+  useEffect(() => setMobileOpen(false), [location.pathname]);
 
   const submitSearch = (event) => {
     event.preventDefault();
@@ -59,7 +78,7 @@ export default function Navbar() {
           {isSeller ? "Seller workspace · Manage your campus store" : "Your campus marketplace · Buy and sell with confidence"}
         </div>
       </div>
-      <div className="container-custom">
+      <div ref={menuRootRef} className="container-custom relative">
         <div className="flex min-h-[76px] items-center gap-6">
           <Brand to={isSeller ? "/seller/dashboard" : "/"} />
 
@@ -96,12 +115,12 @@ export default function Navbar() {
               </div>
             ) : <div className="hidden items-center gap-2 sm:flex"><Link to="/login" className="rounded-xl px-3.5 py-2.5 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">Log in</Link><Link to="/register" className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-slate-800">Join now <ArrowRight size={15} /></Link></div>}
 
-            <button type="button" onClick={() => setMobileOpen((open) => !open)} aria-label={mobileOpen ? "Close menu" : "Open menu"} aria-expanded={mobileOpen} className="grid h-10 w-10 place-items-center rounded-xl text-slate-700 transition hover:bg-slate-100 lg:hidden">{mobileOpen ? <X size={21} /> : <Menu size={21} />}</button>
+            <button type="button" onClick={() => setMobileOpen((open) => !open)} aria-label={mobileOpen ? "Close menu" : "Open menu"} aria-expanded={mobileOpen} aria-controls="mobile-navigation" className="grid h-10 w-10 place-items-center rounded-xl text-slate-700 transition hover:bg-slate-100 lg:hidden">{mobileOpen ? <X size={21} /> : <Menu size={21} />}</button>
           </div>
         </div>
 
-        {mobileOpen && <div className="border-t border-slate-100 pb-5 pt-4 lg:hidden">
-          {!isSeller && <form onSubmit={submitSearch} role="search" className="relative mb-4 md:hidden"><Search aria-hidden="true" size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search the marketplace" aria-label="Search products" className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" /></form>}
+        {mobileOpen && <div id="mobile-navigation" className="absolute right-0 top-full z-50 max-h-[calc(100dvh-9rem)] w-[min(24rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_18px_50px_rgba(15,23,42,.18)] ring-1 ring-slate-950/5 lg:hidden sm:p-4">
+          {!isSeller && <form onSubmit={submitSearch} role="search" className="relative mb-3 md:hidden"><Search aria-hidden="true" size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search the marketplace" aria-label="Search products" className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" /></form>}
           <nav aria-label={isSeller ? "Seller workspace mobile navigation" : "Marketplace mobile navigation"} className="grid gap-1">
             {isSeller ? <>
               <Link to="/seller/products/create" onClick={closeMobile} className="mb-2 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 text-sm font-bold text-white transition hover:bg-slate-800"><Plus size={16} /> Add a product listing</Link>
