@@ -43,7 +43,8 @@ export default function Navbar() {
     closeMobile();
   };
 
-  const sellerLinkClass = (path) => `rounded-lg px-2.5 py-2 text-[13px] font-semibold transition ${active(path) ? "bg-amber-50 text-amber-800" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"}`;
+  const navLinkClass = (path) => `text-[13px] font-semibold transition-colors ${active(path) ? "text-amber-700" : "text-slate-600 hover:text-slate-950"}`;
+  const mobileLinkClass = (path) => `flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-colors ${active(path) ? "bg-amber-50 text-amber-800" : "text-slate-700 hover:bg-slate-50"}`;
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 shadow-[0_2px_18px_rgba(15,23,42,.035)] backdrop-blur-xl">
@@ -65,12 +66,12 @@ export default function Navbar() {
           </form>}
 
           {isSeller ? (
-            <nav aria-label="Seller workspace" className="hidden items-center gap-1 lg:flex">
-              {sellerLinks.map(({ to, label }) => <Link key={to} to={to} aria-current={active(to) ? "page" : undefined} className={sellerLinkClass(to)}>{label}</Link>)}
+            <nav aria-label="Seller workspace" className="hidden items-center gap-6 lg:flex">
+              {sellerLinks.map(({ to, label }) => <Link key={to} to={to} aria-current={active(to) ? "page" : undefined} className={navLinkClass(to)}>{label}</Link>)}
             </nav>
           ) : (
             <nav aria-label="Marketplace navigation" className="hidden items-center gap-7 lg:flex">
-              <Link to="/products" className="text-[13px] font-semibold text-slate-600 transition hover:text-slate-950">Explore</Link>
+              <Link to="/products" aria-current={active("/products") ? "page" : undefined} className={navLinkClass("/products")}>Explore</Link>
               {!isAuthenticated && <Link to="/register?role=seller" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-slate-500 transition hover:text-slate-950"><Store size={15} /> Sell on CampusEcom</Link>}
             </nav>
           )}
@@ -96,17 +97,17 @@ export default function Navbar() {
           {!isSeller && <form onSubmit={submitSearch} role="search" className="relative mb-4 md:hidden"><Search aria-hidden="true" size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search the marketplace" aria-label="Search products" className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" /></form>}
           <nav aria-label={isSeller ? "Seller workspace mobile navigation" : "Marketplace mobile navigation"} className="grid gap-1">
             {isSeller ? <>
-              <Link to="/seller/dashboard" onClick={closeMobile} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><Store size={17} /> Seller overview</Link>
-              <Link to="/seller/products" onClick={closeMobile} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><Package size={17} /> My listings</Link>
-              <Link to="/seller/orders" onClick={closeMobile} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><ClipboardList size={17} /> Orders</Link>
-              <Link to="/seller/sales" onClick={closeMobile} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><BarChart3 size={17} /> Sales</Link>
-              <Link to="/seller/settings" onClick={closeMobile} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><Settings size={17} /> Store settings</Link>
-              <Link to="/messages" onClick={closeMobile} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><MessageCircle size={17} /> Messages</Link>
+              <Link to="/seller/dashboard" onClick={closeMobile} aria-current={active("/seller/dashboard") ? "page" : undefined} className={mobileLinkClass("/seller/dashboard")}><Store size={17} /> Seller overview</Link>
+              <Link to="/seller/products" onClick={closeMobile} aria-current={active("/seller/products") ? "page" : undefined} className={mobileLinkClass("/seller/products")}><Package size={17} /> My listings</Link>
+              <Link to="/seller/orders" onClick={closeMobile} aria-current={active("/seller/orders") ? "page" : undefined} className={mobileLinkClass("/seller/orders")}><ClipboardList size={17} /> Orders</Link>
+              <Link to="/seller/sales" onClick={closeMobile} aria-current={active("/seller/sales") ? "page" : undefined} className={mobileLinkClass("/seller/sales")}><BarChart3 size={17} /> Sales</Link>
+              <Link to="/seller/settings" onClick={closeMobile} aria-current={active("/seller/settings") ? "page" : undefined} className={mobileLinkClass("/seller/settings")}><Settings size={17} /> Store settings</Link>
+              <Link to="/messages" onClick={closeMobile} aria-current={active("/messages") ? "page" : undefined} className={mobileLinkClass("/messages")}><MessageCircle size={17} /> Messages</Link>
             </> : <>
-              <Link to="/products" onClick={closeMobile} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><ShoppingBag size={17} /> Explore products</Link>
-              <Link to="/wishlist" onClick={closeMobile} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><Heart size={17} /> Wishlist</Link>
-              {isAuthenticated && <><Link to="/cart" onClick={closeMobile} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><ShoppingCart size={17} /> Cart {cartCount > 0 && `(${cartCount})`}</Link><Link to="/orders" onClick={closeMobile} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><ClipboardList size={17} /> Order history</Link><Link to="/messages" onClick={closeMobile} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><MessageCircle size={17} /> Messages</Link></>}
-              {!isAuthenticated && <Link to="/register?role=seller" onClick={closeMobile} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><Store size={17} /> Sell on CampusEcom</Link>}
+              <Link to="/products" onClick={closeMobile} aria-current={active("/products") ? "page" : undefined} className={mobileLinkClass("/products")}><ShoppingBag size={17} /> Explore products</Link>
+              <Link to="/wishlist" onClick={closeMobile} aria-current={active("/wishlist") ? "page" : undefined} className={mobileLinkClass("/wishlist")}><Heart size={17} /> Wishlist</Link>
+              {isAuthenticated && <><Link to="/cart" onClick={closeMobile} aria-current={active("/cart") ? "page" : undefined} className={mobileLinkClass("/cart")}><ShoppingCart size={17} /> Cart {cartCount > 0 && `(${cartCount})`}</Link><Link to="/orders" onClick={closeMobile} aria-current={active("/orders") ? "page" : undefined} className={mobileLinkClass("/orders")}><ClipboardList size={17} /> Order history</Link><Link to="/messages" onClick={closeMobile} aria-current={active("/messages") ? "page" : undefined} className={mobileLinkClass("/messages")}><MessageCircle size={17} /> Messages</Link></>}
+              {!isAuthenticated && <Link to="/register?role=seller" onClick={closeMobile} className={mobileLinkClass("/register")}><Store size={17} /> Sell on CampusEcom</Link>}
             </>}
             {isAuthenticated ? <><Link to="/profile" onClick={closeMobile} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><UserRound size={17} /> My account</Link><button type="button" onClick={() => { logout(); closeMobile(); navigate("/"); }} className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50"><LogOut size={17} /> Log out</button></> : <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-100 pt-4"><Link to="/login" onClick={closeMobile} className="rounded-xl border border-slate-200 py-3 text-center text-sm font-semibold text-slate-700">Log in</Link><Link to="/register" onClick={closeMobile} className="rounded-xl bg-slate-950 py-3 text-center text-sm font-semibold text-white">Create account</Link></div>}
           </nav>
