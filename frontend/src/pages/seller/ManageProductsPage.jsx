@@ -19,6 +19,8 @@ import {
   faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 import toast from "react-hot-toast";
+import { isPreviewAuth } from "../../services/auth";
+import { deletePreviewSellerProduct, readPreviewSellerProducts } from "../../services/previewSellerData";
 
 const ManageProductsPage = () => {
   const { user, isAuthenticated } = useAuth();
@@ -30,6 +32,11 @@ const ManageProductsPage = () => {
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
+    if (isPreviewAuth) {
+      setProducts(readPreviewSellerProducts(user?.email));
+      setLoading(false);
+      return;
+    }
     try {
       // Use the correct endpoint for seller's products
       const response = await api.get("/products/my-products/");
@@ -47,7 +54,7 @@ const ManageProductsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.email]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -63,6 +70,12 @@ const ManageProductsPage = () => {
       return;
 
     setDeletingId(productId);
+    if (isPreviewAuth) {
+      setProducts(deletePreviewSellerProduct(user?.email, productId));
+      toast.success(`"${productName}" has been removed`);
+      setDeletingId(null);
+      return;
+    }
     try {
       await api.delete(`/products/${productId}/`);
       toast.success(`"${productName}" has been deleted`);

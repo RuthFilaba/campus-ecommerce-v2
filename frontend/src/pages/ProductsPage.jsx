@@ -3,6 +3,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { ArrowDownUp, ArrowRight, ChevronDown, Filter, Search, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { categories, getCategoryLabel, getConditionLabel, previewProducts } from "../data/previewProducts";
 import PremiumBreadcrumb from "../components/common/PremiumBreadcrumb";
+import { isPreviewAuth } from "../services/auth";
+import { readAllPreviewSellerProducts } from "../services/previewSellerData";
 
 const conditions = [
   { id: "new", label: "New" },
@@ -62,6 +64,10 @@ export default function ProductsPage() {
   const sort = searchParams.get("sort") || "recommended";
   const minimum = Number(searchParams.get("min_price")) || 0;
   const maximum = Number(searchParams.get("max_price")) || Infinity;
+  const catalogue = useMemo(() => [
+    ...previewProducts,
+    ...(isPreviewAuth ? readAllPreviewSellerProducts().filter((product) => product.is_active && Number(product.stock) > 0) : []),
+  ], []);
 
   useEffect(() => {
     setSearchInput(query);
@@ -80,7 +86,7 @@ export default function ProductsPage() {
 
   const products = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    const filtered = previewProducts.filter((product) => {
+    const filtered = catalogue.filter((product) => {
       const matchesQuery = !normalizedQuery || `${product.name} ${product.description} ${product.seller_name} ${getCategoryLabel(product.category)}`.toLowerCase().includes(normalizedQuery);
       return matchesQuery
         && (!category || product.category === category)
@@ -94,7 +100,7 @@ export default function ProductsPage() {
     if (sort === "name") return filtered.sort((a, b) => a.name.localeCompare(b.name));
     if (sort === "newest") return filtered.reverse();
     return filtered;
-  }, [category, condition, maximum, minimum, query, sort]);
+  }, [catalogue, category, condition, maximum, minimum, query, sort]);
 
   const activeFilterCount = [category, condition, searchParams.get("min_price"), searchParams.get("max_price")].filter(Boolean).length;
   const clearFilters = () => {

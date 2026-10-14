@@ -17,6 +17,8 @@ import {
   faPlus
 } from "@fortawesome/free-solid-svg-icons"
 import toast from "react-hot-toast"
+import { isPreviewAuth } from "../../services/auth"
+import { createPreviewSellerProduct } from "../../services/previewSellerData"
 
 const CreateProductPage = () => {
   const { user } = useAuth()
@@ -105,6 +107,13 @@ const CreateProductPage = () => {
         category: formData.category,
         condition: formData.condition,
         stock: parseInt(formData.stock)
+      }
+
+      if (isPreviewAuth) {
+        createPreviewSellerProduct(user?.email, productData)
+        toast.success("Preview listing saved to your seller workspace")
+        navigate("/seller/products")
+        return
       }
 
       console.log("Creating product with data:", productData)

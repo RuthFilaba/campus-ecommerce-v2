@@ -8,19 +8,25 @@ import { getCategoryLabel, getConditionLabel, previewProducts } from "../data/pr
 import { readPreviewWishlist, writePreviewWishlist } from "../services/previewWishlist";
 import { saveDirectCheckout, savePendingPurchase } from "../services/purchaseFlow";
 import PremiumBreadcrumb from "../components/common/PremiumBreadcrumb";
+import { isPreviewAuth } from "../services/auth";
+import { readAllPreviewSellerProducts } from "../services/previewSellerData";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const product = previewProducts.find((item) => String(item.id) === String(id));
   const { addItem } = useCart();
   const { isAuthenticated, user } = useAuth();
   const isSeller = user?.role === "seller" || user?.role === "admin";
+  const catalogue = useMemo(() => [
+    ...previewProducts,
+    ...(isPreviewAuth ? readAllPreviewSellerProducts() : []),
+  ], []);
+  const product = catalogue.find((item) => String(item.id) === String(id));
   const [quantity, setQuantity] = useState(1);
   const [saved, setSaved] = useState(() => product ? readPreviewWishlist().includes(product.id) : false);
 
-  const related = useMemo(() => previewProducts.filter((item) => item.category === product?.category && item.id !== product?.id).slice(0, 3), [product]);
+  const related = useMemo(() => catalogue.filter((item) => item.category === product?.category && item.id !== product?.id).slice(0, 3), [catalogue, product]);
 
   if (!product) {
     return (

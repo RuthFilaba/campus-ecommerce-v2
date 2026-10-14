@@ -23,14 +23,14 @@ const WishlistPage = lazy(() => import("../pages/buyer/WishlistPage"));
 const MessagesPage = lazy(() => import("../pages/MessagesPage"));
 
 // Seller Pages
-const SellerDashboardPage = lazy(() => import("../pages/seller/SellerDashboardPage"));
+const SellerDashboardPage = lazy(() => import("../pages/seller/SellerDashboardRoute"));
 const ManageProductsPage = lazy(() => import("../pages/seller/ManageProductsPage"));
 const CreateProductPage = lazy(() => import("../pages/seller/CreateProductPage"));
-const EditProductPage = lazy(() => import("../pages/seller/EditProductPage"));
-const StoreSettingsPage = lazy(() => import("../pages/seller/StoreSettingsPage"));
-const MySalesPage = lazy(() => import("../pages/seller/MySalesPage"));
+const EditProductPage = lazy(() => import("../pages/seller/SellerEditProductRoute"));
+const StoreSettingsPage = lazy(() => import("../pages/seller/SellerSettingsRoute"));
+const MySalesPage = lazy(() => import("../pages/seller/SellerSalesRoute"));
 const SellerOrderDetailPage = lazy(() => import("../pages/seller/SellerOrderDetailPage"));
-const SellerActiveOrdersPage = lazy(() => import("../pages/seller/ActiveOrdersPage"));
+const SellerActiveOrdersPage = lazy(() => import("../pages/seller/SellerOrdersRoute"));
 
 const AppRoutes = () => {
   const { user, isAuthenticated, loading } = useAuth();
