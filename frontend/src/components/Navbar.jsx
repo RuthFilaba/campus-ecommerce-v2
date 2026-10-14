@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowRight, BarChart3, ClipboardList, Heart, LogOut, Menu, MessageCircle,
-  Package, Search, Settings, ShoppingBag, ShoppingCart, Store, UserRound, X,
+  Package, Plus, Search, Settings, ShoppingBag, ShoppingCart, Store, UserRound, X,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
+import { isPreviewAuth } from "../services/auth";
+import { readPreviewSellerOrders } from "../services/previewSellerData";
 
 function Brand({ to }) {
   return (
@@ -33,6 +35,9 @@ export default function Navbar() {
   const [search, setSearch] = useState("");
   const isSeller = user?.role === "seller" || user?.role === "admin";
   const cartCount = (cart?.items || []).reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
+  const sellerOrderCount = isSeller && isPreviewAuth
+    ? readPreviewSellerOrders(user?.email).filter((order) => !["completed", "cancelled"].includes(String(order.status).toLowerCase())).length
+    : 0;
   const closeMobile = () => setMobileOpen(false);
   const active = (path) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
@@ -43,7 +48,7 @@ export default function Navbar() {
     closeMobile();
   };
 
-  const navLinkClass = (path) => `text-[13px] font-semibold transition-colors ${active(path) ? "text-amber-700" : "text-slate-600 hover:text-slate-950"}`;
+  const navLinkClass = (path) => `whitespace-nowrap text-[13px] font-semibold transition-colors ${active(path) ? "text-amber-700" : "text-slate-600 hover:text-slate-950"}`;
   const mobileLinkClass = (path) => `flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-colors ${active(path) ? "bg-amber-50 text-amber-800" : "text-slate-700 hover:bg-slate-50"}`;
 
   return (
@@ -66,17 +71,19 @@ export default function Navbar() {
           </form>}
 
           {isSeller ? (
-            <nav aria-label="Seller workspace" className="hidden items-center gap-6 lg:flex">
-              {sellerLinks.map(({ to, label }) => <Link key={to} to={to} aria-current={active(to) ? "page" : undefined} className={navLinkClass(to)}>{label}</Link>)}
+            <nav aria-label="Seller workspace" className="hidden items-center gap-4 lg:flex xl:gap-5">
+              {sellerLinks.map(({ to, label }) => <Link key={to} to={to} aria-current={active(to) ? "page" : undefined} className={navLinkClass(to)}>{label}{to === "/seller/orders" && sellerOrderCount > 0 && <span className="ml-1.5 inline-grid h-5 min-w-5 place-items-center rounded-full bg-amber-100 px-1 text-[10px] font-bold text-amber-800">{sellerOrderCount > 9 ? "9+" : sellerOrderCount}</span>}</Link>)}
             </nav>
-          ) : (
+          ) : null}
+          {isSeller && <Link to="/seller/products/create" aria-label="Add a product listing" title="Add a listing" className="ml-auto hidden h-9 items-center justify-center gap-1.5 rounded-lg bg-slate-950 px-2.5 text-xs font-bold text-white transition hover:bg-slate-800 lg:inline-flex xl:px-3"><Plus size={15} /><span className="hidden 2xl:inline">Add listing</span></Link>}
+          {!isSeller && (
             <nav aria-label="Marketplace navigation" className="hidden items-center gap-7 lg:flex">
               <Link to="/products" aria-current={active("/products") ? "page" : undefined} className={navLinkClass("/products")}>Explore</Link>
               {!isAuthenticated && <Link to="/register?role=seller" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-slate-500 transition hover:text-slate-950"><Store size={15} /> Sell on CampusEcom</Link>}
             </nav>
           )}
 
-          <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+          <div className={`${isSeller ? "" : "ml-auto"} flex shrink-0 items-center gap-1 sm:gap-2`}>
             {isAuthenticated && !isSeller && <Link to="/wishlist" aria-label="Wishlist" className="hidden h-10 w-10 place-items-center rounded-xl text-slate-600 transition hover:bg-slate-100 hover:text-amber-600 sm:grid"><Heart size={19} strokeWidth={1.8} /></Link>}
             {isAuthenticated && !isSeller && <Link to="/cart" aria-label={`Cart${cartCount ? `, ${cartCount} items` : ""}`} className="relative grid h-10 w-10 place-items-center rounded-xl text-slate-600 transition hover:bg-slate-100 hover:text-amber-600"><ShoppingCart size={19} strokeWidth={1.8} />{cartCount > 0 && <span className="absolute right-0.5 top-0.5 grid h-[17px] min-w-[17px] place-items-center rounded-full bg-amber-500 px-1 text-[10px] font-bold leading-none text-white">{cartCount > 99 ? "99+" : cartCount}</span>}</Link>}
             {isAuthenticated ? (
@@ -97,12 +104,17 @@ export default function Navbar() {
           {!isSeller && <form onSubmit={submitSearch} role="search" className="relative mb-4 md:hidden"><Search aria-hidden="true" size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search the marketplace" aria-label="Search products" className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" /></form>}
           <nav aria-label={isSeller ? "Seller workspace mobile navigation" : "Marketplace mobile navigation"} className="grid gap-1">
             {isSeller ? <>
-              <Link to="/seller/dashboard" onClick={closeMobile} aria-current={active("/seller/dashboard") ? "page" : undefined} className={mobileLinkClass("/seller/dashboard")}><Store size={17} /> Seller overview</Link>
-              <Link to="/seller/products" onClick={closeMobile} aria-current={active("/seller/products") ? "page" : undefined} className={mobileLinkClass("/seller/products")}><Package size={17} /> My listings</Link>
-              <Link to="/seller/orders" onClick={closeMobile} aria-current={active("/seller/orders") ? "page" : undefined} className={mobileLinkClass("/seller/orders")}><ClipboardList size={17} /> Orders</Link>
-              <Link to="/seller/sales" onClick={closeMobile} aria-current={active("/seller/sales") ? "page" : undefined} className={mobileLinkClass("/seller/sales")}><BarChart3 size={17} /> Sales</Link>
-              <Link to="/seller/settings" onClick={closeMobile} aria-current={active("/seller/settings") ? "page" : undefined} className={mobileLinkClass("/seller/settings")}><Settings size={17} /> Store settings</Link>
-              <Link to="/messages" onClick={closeMobile} aria-current={active("/messages") ? "page" : undefined} className={mobileLinkClass("/messages")}><MessageCircle size={17} /> Messages</Link>
+              <Link to="/seller/products/create" onClick={closeMobile} className="mb-2 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 text-sm font-bold text-white transition hover:bg-slate-800"><Plus size={16} /> Add a product listing</Link>
+              <div className="grid grid-cols-2 gap-1">
+                <Link to="/seller/dashboard" onClick={closeMobile} aria-current={active("/seller/dashboard") ? "page" : undefined} className={mobileLinkClass("/seller/dashboard")}><Store size={17} /> Overview</Link>
+                <Link to="/seller/products" onClick={closeMobile} aria-current={active("/seller/products") ? "page" : undefined} className={mobileLinkClass("/seller/products")}><Package size={17} /> Listings</Link>
+                <Link to="/seller/orders" onClick={closeMobile} aria-current={active("/seller/orders") ? "page" : undefined} className={mobileLinkClass("/seller/orders")}><ClipboardList size={17} /> Orders{sellerOrderCount > 0 && <span className="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">{sellerOrderCount}</span>}</Link>
+                <Link to="/seller/sales" onClick={closeMobile} aria-current={active("/seller/sales") ? "page" : undefined} className={mobileLinkClass("/seller/sales")}><BarChart3 size={17} /> Sales</Link>
+              </div>
+              <div className="mt-2 border-t border-slate-100 pt-2">
+                <Link to="/seller/settings" onClick={closeMobile} aria-current={active("/seller/settings") ? "page" : undefined} className={mobileLinkClass("/seller/settings")}><Settings size={17} /> Store settings</Link>
+                <Link to="/messages" onClick={closeMobile} aria-current={active("/messages") ? "page" : undefined} className={mobileLinkClass("/messages")}><MessageCircle size={17} /> Messages</Link>
+              </div>
             </> : <>
               <Link to="/products" onClick={closeMobile} aria-current={active("/products") ? "page" : undefined} className={mobileLinkClass("/products")}><ShoppingBag size={17} /> Explore products</Link>
               <Link to="/wishlist" onClick={closeMobile} aria-current={active("/wishlist") ? "page" : undefined} className={mobileLinkClass("/wishlist")}><Heart size={17} /> Wishlist</Link>
