@@ -80,3 +80,4 @@ temp/
 *.pickle
 credentials.json
 service-account.json
+.vercel
