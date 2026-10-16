@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faTrash, faPlus, faMinus, faHeart } from "@fortawesome/free-solid-svg-icons"
 import { motion } from "framer-motion"
+import { getProductPrimaryImage } from "../../utils/productImages"
 
 const CartItem = ({ item, onUpdateQuantity, onRemove, onMoveToWishlist }) => {
   const [updating, setUpdating] = useState(false)
@@ -56,7 +57,7 @@ const CartItem = ({ item, onUpdateQuantity, onRemove, onMoveToWishlist }) => {
     return `https://placehold.co/128x128/amber-500/white?text=${encodeURIComponent(name.charAt(0))}`
   }
 
-  const imageUrl = getImageUrl()
+  const imageUrl = getProductPrimaryImage(productDetail, getImageUrl())
 
   const handleQuantityChange = async (newQuantity) => {
     if (newQuantity < 1) return

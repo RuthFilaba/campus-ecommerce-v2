@@ -1,36 +1,9 @@
-import { useState } from "react";
-import Hero from "../components/home/Hero";
-import CategoryPills from "../components/home/CategoryPills";
-import HorizontalProductRow from "../components/home/HorizontalProductRow";
-import PremiumTrending from "../components/home/PremiumTrending";
-import WhyChooseUs from "../components/home/WhyChooseUs";
-import Testimonials from "../components/home/Testimonials";
-import Footer from "../components/home/Footer";
+import React from 'react';
+import LandingPage from './LandingPage';
 
-export default function HomePage() {
-  const [activeCategory, setActiveCategory] = useState("all");
+// HomePage simply renders LandingPage which has its own Navbar
+const HomePage = () => {
+  return <LandingPage />;
+};
 
-  return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <main className="flex-grow">
-        <Hero />
-        
-        <section className="py-8 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <CategoryPills 
-              activeCategory={activeCategory} 
-              onCategoryChange={setActiveCategory} 
-            />
-            <HorizontalProductRow category={activeCategory} />
-          </div>
-        </section>
-        
-        <PremiumTrending />
-        <WhyChooseUs />
-        <Testimonials />
-        
-      </main>
-      <Footer />
-    </div>
-  );
-}
+export default HomePage;

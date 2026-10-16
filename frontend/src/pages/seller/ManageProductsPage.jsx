@@ -19,6 +19,9 @@ import {
   faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 import toast from "react-hot-toast";
+import { isPreviewAuth } from "../../services/auth";
+import { deletePreviewSellerProduct, readPreviewSellerProducts } from "../../services/previewSellerData";
+import { getProductPrimaryImage } from "../../utils/productImages";
 
 const ManageProductsPage = () => {
   const { user, isAuthenticated } = useAuth();
@@ -30,6 +33,11 @@ const ManageProductsPage = () => {
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
+    if (isPreviewAuth) {
+      setProducts(readPreviewSellerProducts(user?.email));
+      setLoading(false);
+      return;
+    }
     try {
       // Use the correct endpoint for seller's products
       const response = await api.get("/products/my-products/");
@@ -47,7 +55,7 @@ const ManageProductsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.email]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -63,6 +71,12 @@ const ManageProductsPage = () => {
       return;
 
     setDeletingId(productId);
+    if (isPreviewAuth) {
+      setProducts(deletePreviewSellerProduct(user?.email, productId));
+      toast.success(`"${productName}" has been removed`);
+      setDeletingId(null);
+      return;
+    }
     try {
       await api.delete(`/products/${productId}/`);
       toast.success(`"${productName}" has been deleted`);
@@ -188,10 +202,7 @@ const ManageProductsPage = () => {
               const isLowStock = product.stock <= 5 && product.stock > 0;
               const isOutOfStock = product.stock === 0;
 
-              const productImage =
-                product.image_1 ||
-                product.image_url ||
-                `https://placehold.co/64x64/e5e7eb/9ca3af?text=${product.name?.charAt(0) || "P"}`;
+              const productImage = getProductPrimaryImage(product, `https://placehold.co/64x64/e5e7eb/9ca3af?text=${product.name?.charAt(0) || "P"}`);
 
               return (
                 <div

@@ -1,155 +1,226 @@
-import { useState, useEffect } from "react"
-import { Link } from "react-router-dom"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faSearch, faSpinner, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons"
-import ProductCard from "../components/product/ProductCard"
-import Breadcrumb from "../components/common/Breadcrumb"
-import api from "../services/api"
-import { useAuth } from "../contexts/AuthContext"
-import toast from "react-hot-toast"
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { ArrowDownUp, ArrowRight, ChevronDown, Filter, Search, SlidersHorizontal, Sparkles, Star, X } from "lucide-react";
+import { categories, getCategoryLabel, getConditionLabel, previewProducts } from "../data/previewProducts";
+import PremiumBreadcrumb from "../components/common/PremiumBreadcrumb";
+import { isPreviewAuth } from "../services/auth";
+import { readAllPreviewSellerProducts } from "../services/previewSellerData";
+import { getProductPrimaryImage } from "../utils/productImages";
+import { readAdminPreviewCategories } from "../services/adminPreview";
+import { readPreviewReviews } from "../services/previewReviews";
+import { formatMoney, readPreferredCurrency, readZmwPerUsdRate } from "../services/currency";
 
-const ProductsPage = () => {
-  const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [error, setError] = useState("")
-  const { user, isAuthenticated } = useAuth()
+const conditions = [
+  { id: "new", label: "New" },
+  { id: "like_new", label: "Like new" },
+  { id: "good", label: "Good" },
+  { id: "fair", label: "Fair" },
+];
 
-  const fetchProducts = async () => {
-    setLoading(true)
-    setError("")
-    
-    try {
-      const response = await api.get('/products/')
-      let productsData = []
-      if (response.data.results) {
-        productsData = response.data.results
-      } else if (Array.isArray(response.data)) {
-        productsData = response.data
-      } else {
-        productsData = response.data.results || response.data.data || []
-      }
-      setProducts(productsData)
-    } catch (err) {
-      console.error("Failed to fetch products:", err)
-      setError(err.response?.data?.detail || err.message || "Failed to load products")
-    } finally {
-      setLoading(false)
-    }
-  }
+const sortOptions = [
+  { id: "recommended", label: "Recommended" },
+  { id: "newest", label: "Recently added" },
+  { id: "price-low", label: "Price: low to high" },
+  { id: "price-high", label: "Price: high to low" },
+  { id: "name", label: "Name: A to Z" },
+];
 
-  useEffect(() => {
-    fetchProducts()
-  }, [])
-
-  // Handle add to cart - Block sellers from buying
-  const handleAddToCart = async (productId) => {
-    if (user?.role === "seller") {
-      toast.error("Seller accounts cannot purchase products. Please create a buyer account to shop.")
-      return
-    }
-    
-    if (!isAuthenticated) {
-      toast.error('Please login to add items to cart')
-      return
-    }
-    
-    try {
-      await api.post('/cart/add/', { product_id: productId, quantity: 1 })
-      toast.success('Added to cart!')
-    } catch (err) {
-      toast.error('Failed to add to cart')
-    }
-  }
-
-  // Handle add to wishlist - Block sellers
-  const handleAddToWishlist = async (productId) => {
-    if (user?.role === "seller") {
-      toast.error("Seller accounts cannot use wishlist. Please create a buyer account.")
-      return
-    }
-    
-    if (!isAuthenticated) {
-      toast.error('Please login to add to wishlist')
-      return
-    }
-    
-    try {
-      await api.post('/wishlist/add/', { product_id: productId })
-      toast.success('Added to wishlist!')
-    } catch (err) {
-      toast.error('Failed to add to wishlist')
-    }
-  }
-
-  const filteredProducts = products.filter(product =>
-    product.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+function PreviewProductCard({ product }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const condition = getConditionLabel(product.condition);
+  const reviews = readPreviewReviews(product.id);
+  const rating = reviews.length ? reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length : Number(product.rating || 0);
+  const reviewCount = reviews.length || Number(product.review_count || 0);
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
-      <div className="container-custom">
-        <Breadcrumb />
-        
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            All Products
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Discover amazing deals from campus sellers
-          </p>
+    <article className="group min-w-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-white transition duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_18px_42px_rgba(15,23,42,.09)]">
+      <Link to={`/products/${product.id}`} className="block focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-amber-400/50" aria-label={`View ${product.name}`}>
+        <div className="relative aspect-[1.12/1] overflow-hidden bg-slate-100">
+          {imageFailed ? (
+            <div className="grid h-full place-items-center bg-gradient-to-br from-amber-50 via-orange-50 to-slate-100 text-5xl font-bold text-amber-300">{product.name.charAt(0)}</div>
+          ) : (
+            <img src={getProductPrimaryImage(product)} alt={product.name} loading="lazy" onError={() => setImageFailed(true)} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.045]" />
+          )}
+          <span className="absolute left-3 top-3 rounded-full border border-white/70 bg-white/90 px-2.5 py-1 text-[10px] font-bold text-slate-700 shadow-sm backdrop-blur">{condition}</span>
+          {Number(product.stock) <= 0 && <span className="absolute bottom-3 left-3 rounded-full bg-slate-950/85 px-2.5 py-1 text-[10px] font-semibold text-white">Out of stock</span>}
+          {product.stock === 1 && <span className="absolute bottom-3 left-3 rounded-full bg-slate-950/80 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur">One available</span>}
+          <span className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-slate-500 shadow-sm transition group-hover:bg-amber-400 group-hover:text-slate-950"><ArrowRight size={15} /></span>
         </div>
-
-        <div className="mb-8">
-          <div className="relative max-w-md">
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 pl-12 border border-gray-300 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-800"
-            />
-            <FontAwesomeIcon icon={faSearch} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        <div className="p-4 sm:p-5">
+          <p className="text-[10px] font-bold uppercase tracking-[.13em] text-slate-400">{getCategoryLabel(product.category)}</p>
+          <h2 className="mt-1.5 min-h-11 text-sm font-semibold leading-5 tracking-[-.015em] text-slate-900 sm:text-[15px]">{product.name}</h2>
+          {rating > 0 && <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600"><Star size={12} className="fill-amber-400 text-amber-500" /> {rating.toFixed(1)} <span className="font-normal text-slate-400">({reviewCount})</span></p>}
+          <div className="mt-4 flex items-end justify-between gap-3 border-t border-slate-100 pt-3.5">
+            <span className="text-lg font-bold tracking-[-.035em] text-slate-950">{formatMoney(product.price)}</span>
+            <span className="max-w-[48%] truncate text-right text-[11px] font-medium text-slate-500">{product.seller_name}</span>
           </div>
         </div>
-
-        {error && (
-          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-600 text-center">
-            <FontAwesomeIcon icon={faExclamationTriangle} className="mr-2" />
-            {error}
-          </div>
-        )}
-
-        {loading && (
-          <div className="flex justify-center items-center py-20">
-            <FontAwesomeIcon icon={faSpinner} className="animate-spin text-4xl text-amber-500" />
-          </div>
-        )}
-
-        {!loading && (
-          <>
-            {filteredProducts.length === 0 ? (
-              <div className="text-center py-20">
-                <p className="text-gray-500 text-lg">No products found</p>
-                <button onClick={fetchProducts} className="mt-4 text-amber-500 hover:text-amber-600">Refresh</button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    onAddToCart={handleAddToCart}
-                    onAddToWishlist={handleAddToWishlist}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  )
+      </Link>
+    </article>
+  );
 }
 
-export default ProductsPage
+export default function ProductsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchInput, setSearchInput] = useState(searchParams.get("search") || "");
+  const [minimumInput, setMinimumInput] = useState(searchParams.get("min_price") || "");
+  const [maximumInput, setMaximumInput] = useState(searchParams.get("max_price") || "");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const category = searchParams.get("category") || "";
+  const condition = searchParams.get("condition") || "";
+  const query = searchParams.get("search") || "";
+  const sort = searchParams.get("sort") || "recommended";
+  const availability = searchParams.get("availability") || "";
+  const minimumRating = Number(searchParams.get("min_rating")) || 0;
+  const brand = searchParams.get("brand") || "";
+  const priceMultiplier = readPreferredCurrency() === "USD" && readZmwPerUsdRate() > 0 ? readZmwPerUsdRate() : 1;
+  const minimum = (Number(searchParams.get("min_price")) || 0) * priceMultiplier;
+  const rawMaximum = Number(searchParams.get("max_price")) || Infinity;
+  const maximum = rawMaximum === Infinity ? Infinity : rawMaximum * priceMultiplier;
+  const catalogue = useMemo(() => [
+    ...previewProducts,
+    ...(isPreviewAuth ? readAllPreviewSellerProducts().filter((product) => product.is_active !== false) : []),
+  ], []);
+  const categoryOptions = useMemo(() => readAdminPreviewCategories(categories).filter((item) => item.is_active !== false), []);
+
+  useEffect(() => {
+    setSearchInput(query);
+    setMinimumInput(searchParams.get("min_price") || "");
+    setMaximumInput(searchParams.get("max_price") || "");
+  }, [query, searchParams]);
+
+  const updateParams = (changes) => {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(changes).forEach(([key, value]) => {
+      if (value === "" || value == null) next.delete(key);
+      else next.set(key, value);
+    });
+    setSearchParams(next, { replace: true });
+  };
+
+  const products = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    const filtered = catalogue.filter((product) => {
+      const matchesQuery = !normalizedQuery || `${product.name} ${product.description} ${product.seller_name} ${getCategoryLabel(product.category)}`.toLowerCase().includes(normalizedQuery);
+      return matchesQuery
+        && (!category || product.category === category)
+        && (!condition || product.condition === condition)
+        && (!availability || (availability === "in-stock" ? Number(product.stock) > 0 : Number(product.stock) <= 0))
+        && (!brand || String(product.brand || "").toLowerCase().includes(brand.toLowerCase()))
+        && (!minimumRating || (() => { const reviews = readPreviewReviews(product.id); const rating = reviews.length ? reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length : Number(product.rating || 0); return rating >= minimumRating; })())
+        && product.price >= minimum
+        && product.price <= maximum;
+    });
+
+    if (sort === "price-low") return filtered.sort((a, b) => a.price - b.price);
+    if (sort === "price-high") return filtered.sort((a, b) => b.price - a.price);
+    if (sort === "name") return filtered.sort((a, b) => a.name.localeCompare(b.name));
+    if (sort === "newest") return filtered.reverse();
+    return filtered;
+  }, [availability, brand, catalogue, category, condition, maximum, minimum, minimumRating, query, sort]);
+
+  const activeFilterCount = [category, condition, availability, brand, minimumRating, searchParams.get("min_price"), searchParams.get("max_price")].filter(Boolean).length;
+  const clearFilters = () => {
+    setSearchInput("");
+    setMinimumInput("");
+    setMaximumInput("");
+    setSearchParams({}, { replace: true });
+  };
+
+  const submitSearch = (event) => {
+    event.preventDefault();
+    updateParams({ search: searchInput.trim() });
+  };
+
+  return (
+    <div className="min-h-screen bg-[#fafaf9] pb-16">
+      <div className="border-b border-slate-200/80 bg-white">
+        <div className="container-custom py-8 sm:py-10">
+          <PremiumBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Marketplace" }]} />
+          <div className="mt-5 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.12em] text-amber-700"><Sparkles size={12} /> Marketplace preview</div>
+              <h1 className="mt-3 text-3xl font-semibold tracking-[-.055em] text-slate-950 sm:text-[40px]">Find your next good thing.</h1>
+              <p className="mt-2 text-sm text-slate-500">Explore sample listings from around the Mulungushi University community.</p>
+            </div>
+            <form onSubmit={submitSearch} role="search" className="relative w-full lg:max-w-[390px]">
+              <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+              <input type="search" value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Search the marketplace" aria-label="Search the marketplace" className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-12 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" />
+              {searchInput && <button type="button" onClick={() => { setSearchInput(""); updateParams({ search: "" }); }} aria-label="Clear search" className="absolute right-3 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X size={15} /></button>}
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div className="container-custom pt-7 sm:pt-9">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Product categories">
+          <button type="button" onClick={() => updateParams({ category: "" })} className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition ${!category ? "bg-slate-950 text-white shadow-sm" : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"}`}>All items</button>
+          {categoryOptions.map((item) => <button key={item.id} type="button" onClick={() => updateParams({ category: category === item.id ? "" : item.id })} className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition ${category === item.id ? "bg-slate-950 text-white shadow-sm" : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"}`}>{item.label}</button>)}
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={() => setFiltersOpen((open) => !open)} aria-expanded={filtersOpen} className={`inline-flex h-10 items-center gap-2 rounded-xl border px-3.5 text-xs font-semibold transition ${filtersOpen || activeFilterCount ? "border-slate-900 bg-slate-950 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"}`}>
+              <SlidersHorizontal size={15} /> Filters {activeFilterCount > 0 && <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px] ${filtersOpen || activeFilterCount ? "bg-white/15" : "bg-amber-100 text-amber-800"}`}>{activeFilterCount}</span>}
+            </button>
+            <span className="text-xs text-slate-500"><strong className="font-bold text-slate-800">{products.length}</strong> {products.length === 1 ? "listing" : "listings"}</span>
+          </div>
+          <label className="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-500">
+            <ArrowDownUp size={14} />
+            <span className="hidden sm:inline">Sort</span>
+            <select value={sort} onChange={(event) => updateParams({ sort: event.target.value === "recommended" ? "" : event.target.value })} aria-label="Sort listings" className="max-w-[150px] cursor-pointer bg-transparent font-semibold text-slate-700 outline-none">
+              {sortOptions.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+            </select>
+            <ChevronDown size={13} className="pointer-events-none -ml-1" />
+          </label>
+        </div>
+
+        {filtersOpen && (
+          <section aria-label="Filter listings" className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4 xl:items-end">
+              <fieldset>
+                <legend className="mb-2 text-xs font-bold text-slate-700">Condition</legend>
+                <div className="flex flex-wrap gap-2">
+                  {conditions.map((item) => <button key={item.id} type="button" onClick={() => updateParams({ condition: condition === item.id ? "" : item.id })} className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${condition === item.id ? "border-amber-500 bg-amber-50 text-amber-800" : "border-slate-200 text-slate-600 hover:border-slate-300"}`}>{item.label}</button>)}
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend className="mb-2 text-xs font-bold text-slate-700">Availability & rating</legend>
+                <div className="grid grid-cols-2 gap-2"><select aria-label="Availability" value={availability} onChange={(event) => updateParams({ availability: event.target.value })} className="h-10 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700"><option value="">All stock</option><option value="in-stock">Available</option><option value="out-of-stock">Out of stock</option></select><select aria-label="Minimum rating" value={minimumRating || ""} onChange={(event) => updateParams({ min_rating: event.target.value })} className="h-10 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700"><option value="">Any rating</option><option value="4">4+ stars</option><option value="3">3+ stars</option></select></div>
+              </fieldset>
+              <label className="block text-xs font-bold text-slate-700">Brand<input value={brand} onChange={(event) => updateParams({ brand: event.target.value })} placeholder="Any brand" className="mt-2 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" /></label>
+              <fieldset>
+                <legend className="mb-2 text-xs font-bold text-slate-700">Price range · {readPreferredCurrency()}</legend>
+                <div className="flex items-center gap-2">
+                  <label className="sr-only" htmlFor="price-min">Minimum price</label><input id="price-min" inputMode="numeric" type="number" min="0" value={minimumInput} onChange={(event) => setMinimumInput(event.target.value)} placeholder="Min" className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" />
+                  <span className="text-slate-300">—</span>
+                  <label className="sr-only" htmlFor="price-max">Maximum price</label><input id="price-max" inputMode="numeric" type="number" min="0" value={maximumInput} onChange={(event) => setMaximumInput(event.target.value)} placeholder="Max" className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" />
+                </div>
+              </fieldset>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => updateParams({ min_price: minimumInput, max_price: maximumInput })} className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-amber-400 px-4 text-xs font-bold text-slate-950 transition hover:bg-amber-300"><Filter size={14} /> Apply</button>
+                <button type="button" onClick={clearFilters} className="h-10 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-50">Reset</button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {products.length > 0 ? (
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:mt-7 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+            {products.map((product) => <PreviewProductCard key={product.id} product={product} />)}
+          </div>
+        ) : (
+          <div className="mt-8 rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-16 text-center">
+            <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-500"><Search size={20} /></span>
+            <h2 className="mt-4 text-lg font-semibold tracking-tight text-slate-900">No listings match those filters</h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">Try another search or clear the filters to explore all preview listings.</p>
+            <button type="button" onClick={clearFilters} className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-slate-950 px-4 text-xs font-bold text-white transition hover:bg-slate-800">Clear filters <ArrowRight size={14} /></button>
+          </div>
+        )}
+
+        <p className="mt-8 flex items-center justify-center gap-2 text-center text-[11px] text-slate-400"><Filter size={13} /> Preview catalog · Listings and seller details are sample content until backend connection.</p>
+      </div>
+    </div>
+  );
+}

@@ -376,7 +376,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="h-screen bg-gray-100 flex">
+    <div className="flex h-[calc(100dvh-6.75rem)] min-h-[28rem] min-w-0 overflow-hidden bg-gray-100">
       {/* Sidebar */}
       <div className={`${!showMobileSidebar ? "hidden md:flex" : "flex"} w-full md:w-96 bg-white border-r flex-col`}>
         <div className="p-4 border-b bg-white sticky top-0 z-10 flex items-center justify-between">

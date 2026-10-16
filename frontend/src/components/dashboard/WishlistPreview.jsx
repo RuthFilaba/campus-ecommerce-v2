@@ -1,12 +1,20 @@
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import api from "../../services/api"
+import { isPreviewAuth } from "../../services/auth"
+import { readPreviewWishlist } from "../../services/previewWishlist"
+import { previewProducts } from "../../data/previewProducts"
+import { readAllPreviewSellerProducts } from "../../services/previewSellerData"
+import { getProductPrimaryImage } from "../../utils/productImages"
 
 const WishlistPreview = () => {
   const [wishlist, setWishlist] = useState([])
 
   useEffect(() => {
-    fetchWishlist()
+    if (isPreviewAuth) {
+      const catalogue = [...readAllPreviewSellerProducts(), ...previewProducts]
+      setWishlist(readPreviewWishlist().map((id) => catalogue.find((product) => String(product.id) === String(id))).filter(Boolean).slice(0, 3))
+    } else fetchWishlist()
   }, [])
 
   const fetchWishlist = async () => {
@@ -31,7 +39,7 @@ const WishlistPreview = () => {
       <div className="space-y-3">
         {wishlist.map((item) => (
           <div key={item.id} className="flex gap-3">
-            <img src={item.image || "https://placehold.co/60x60"} alt="" className="w-12 h-12 rounded-lg object-cover" />
+            <img src={getProductPrimaryImage(item, item.image || "https://placehold.co/60x60")} alt="" className="w-12 h-12 rounded-lg object-cover" />
             <div className="flex-1">
               <p className="font-medium text-sm">{item.name}</p>
               <p className="text-amber-600 font-semibold text-sm">ZMW {item.price}</p>

@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { motion } from "framer-motion"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { 
@@ -18,7 +18,6 @@ import { useAuth } from "../../contexts/AuthContext"
 import FormInput from "../../components/ui/FormInput"
 import AnimatedButton from "../../components/ui/AnimatedButton"
 import { z } from "zod"
-import api from "../../services/api"
 
 const registerSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -28,6 +27,7 @@ const registerSchema = z.object({
   role: z.enum(["buyer", "seller"]),
   password: z.string().min(8, "Password must be at least 8 characters"),
   password2: z.string().min(1, "Please confirm your password"),
+  termsAccepted: z.boolean().refine((accepted) => accepted, "Accept the Terms and Privacy Policy to continue"),
 }).refine((data) => data.password === data.password2, {
   message: "Passwords don't match",
   path: ["password2"],
@@ -35,8 +35,11 @@ const registerSchema = z.object({
 
 const RegisterPage = () => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const { register: createAccount } = useAuth()
+  const initialRole = searchParams.get("role") === "seller" ? "seller" : "buyer"
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedRole, setSelectedRole] = useState("buyer")
+  const [selectedRole, setSelectedRole] = useState(initialRole)
   const [errorMessage, setErrorMessage] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
 
@@ -48,13 +51,14 @@ const RegisterPage = () => {
   } = useForm({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      role: "buyer",
+      role: initialRole,
       first_name: "",
       last_name: "",
       email: "",
       phone: "",
       password: "",
       password2: "",
+      termsAccepted: false,
     },
   })
 
@@ -71,31 +75,17 @@ const RegisterPage = () => {
       last_name: data.last_name,
       phone: data.phone || "",
       role: data.role,
+      terms_accepted: data.termsAccepted,
     }
     
-    try {
-      const response = await api.post('/users/register/', payload)
-      
-      if (response.data) {
-        setSuccessMessage('Registration successful! Redirecting to login...')
-        setTimeout(() => {
-          navigate("/login")
-        }, 2000)
-      }
-    } catch (error) {
-      let message = 'Registration failed. '
-      
-      if (error.response?.data) {
-        const errorData = error.response.data
-        if (errorData.email) message = errorData.email.join?.(", ") || errorData.email
-        else if (errorData.password) message = errorData.password.join?.(", ") || errorData.password
-        else if (errorData.detail) message = errorData.detail
-        else message = "Please check your information"
-      }
-      
-      setErrorMessage(message)
-    } finally {
-      setIsLoading(false)
+    const success = await createAccount(payload)
+    setIsLoading(false)
+
+    if (success) {
+      setSuccessMessage('Account created. Redirecting to sign in...')
+      window.setTimeout(() => navigate("/login", { state: { email: data.email } }), 1200)
+    } else {
+      setErrorMessage('Registration failed. Please check your information and try again.')
     }
   }
 
@@ -119,6 +109,7 @@ const RegisterPage = () => {
           </div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Create account</h2>
           <p className="mt-2 text-gray-600 dark:text-gray-400">Join CampusEcom today</p>
+          <p className="mt-2 text-xs text-slate-500">Preview accounts are saved on this device until backend registration is connected.</p>
         </div>
 
         {/* Messages */}
@@ -221,6 +212,14 @@ const RegisterPage = () => {
               error={errors.password2?.message}
               {...register("password2")}
             />
+
+            <div>
+              <label className="flex items-start gap-2.5 text-xs leading-5 text-slate-600">
+                <input type="checkbox" className="mt-1 h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500" {...register("termsAccepted")} />
+                <span>I agree to the <Link to="/terms" className="font-semibold text-amber-700 underline">Terms and Conditions</Link> and acknowledge the <Link to="/privacy" className="font-semibold text-amber-700 underline">Privacy Policy</Link>.</span>
+              </label>
+              {errors.termsAccepted?.message && <p role="alert" className="mt-1 text-xs text-rose-600">{errors.termsAccepted.message}</p>}
+            </div>
 
             <button
               type="submit"

@@ -3,12 +3,17 @@ import { Link } from "react-router-dom"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faHeart } from "@fortawesome/free-solid-svg-icons"
 import api from "../../services/api"
+import { isPreviewAuth } from "../../services/auth"
+import { previewProducts } from "../../data/previewProducts"
+import { readAllPreviewSellerProducts } from "../../services/previewSellerData"
+import { getProductPrimaryImage } from "../../utils/productImages"
 
 const Recommendations = () => {
   const [recommendations, setRecommendations] = useState([])
 
   useEffect(() => {
-    fetchRecommendations()
+    if (isPreviewAuth) setRecommendations([...readAllPreviewSellerProducts(), ...previewProducts].slice(0, 5))
+    else fetchRecommendations()
   }, [])
 
   const fetchRecommendations = async () => {
@@ -28,12 +33,12 @@ const Recommendations = () => {
         <Link to="/products" className="text-amber-500 text-sm hover:underline">View All</Link>
       </div>
 
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 xl:grid-cols-5">
         {recommendations.map((product) => (
           <Link key={product.id} to={`/products/${product.id}`} className="bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm hover:shadow-md transition-all group">
             <div className="relative">
               <img 
-                src={product.image_1 || product.image_url || `https://placehold.co/200x200/f59e0b/white?text=${product.name?.charAt(0)}`} 
+                src={getProductPrimaryImage(product, `https://placehold.co/200x200/f59e0b/white?text=${product.name?.charAt(0)}`)}
                 alt={product.name}
                 className="w-full h-32 object-cover rounded-lg mb-2"
                 onError={(e) => e.target.src = `https://placehold.co/200x200/f59e0b/white?text=${product.name?.charAt(0)}`}

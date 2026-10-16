@@ -9,39 +9,52 @@ import { useAuth } from "../../contexts/AuthContext"
 import FormInput from "../../components/ui/FormInput"
 import AnimatedButton from "../../components/ui/AnimatedButton"
 import { loginSchema } from "../../utils/validators"
+import { isPreviewAuth } from "../../services/auth"
+import { useCart } from "../../contexts/CartContext"
+import { clearPendingPurchase, readPendingPurchase, saveDirectCheckout } from "../../services/purchaseFlow"
 
 const LoginPage = () => {
-  const { login,user } = useAuth()
+  const { login } = useAuth()
+  const { addItem } = useCart()
   const navigate = useNavigate()
   const location = useLocation()
   const [isLoading, setIsLoading] = useState(false)
 
+
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
+    defaultValues: { email: location.state?.email || "" },
   })
 
   const onSubmit = async (data) => {
     setIsLoading(true)
-    const success = await login(data.email, data.password)
+    const result = await login(data.email, data.password)
     setIsLoading(false)
-    
-    if (success) {
-      let defaultDestination = "/"
-      if (user?.role == "admin")
-        defaultDestination = "/admin/products"
-      else if (user?.role == "seller")
-        defaultDestination = "/seller/dashboard"
-      else if (user?.role == "buyer")
-        defaultDestination = "/dashboard"
 
-      const destination = location.state?.from?.pathname || defaultDestination
+    if (result) {
+      const pendingPurchase = readPendingPurchase()
+      const isSeller = result?.role === "seller"
+      const isAdmin = result?.role === "admin"
+      if (!isSeller && !isAdmin && pendingPurchase?.product && pendingPurchase.type === "add-to-cart") {
+        addItem(pendingPurchase.product, pendingPurchase.quantity)
+        clearPendingPurchase()
+        navigate("/cart", { replace: true })
+        return
+      }
+      if (!isSeller && !isAdmin && pendingPurchase?.product && pendingPurchase.type === "buy-now") {
+        saveDirectCheckout(pendingPurchase.product, pendingPurchase.quantity)
+        clearPendingPurchase()
+        navigate("/checkout", { replace: true })
+        return
+      }
+      const destination = location.state?.from?.pathname || (isAdmin ? "/admin/dashboard" : isSeller ? "/seller/dashboard" : "/")
       navigate(destination, { replace: true })
     }
-
   }
 
   return (
@@ -86,12 +99,36 @@ const LoginPage = () => {
             <FormInput
               label="Password"
               type="password"
-              placeholder=""
+              placeholder="••••••••"
               icon={faLock}
               required
               error={errors.password?.message}
               {...register("password")}
             />
+
+            {isPreviewAuth && (
+              <div className="grid grid-cols-1 gap-2 rounded-xl bg-amber-50 p-3 min-[420px]:grid-cols-3">
+                <p className="col-span-full text-[11px] font-semibold text-amber-900">Quick preview sign in</p>
+                {[
+                  { label: "Test as buyer", email: "buyer@campusecom.zm" },
+                  { label: "Test as seller", email: "seller@campusecom.zm" },
+                  { label: "Test as admin", email: "admin@campusecom.zm" },
+                ].map(({ label, email }) => (
+                  <button
+                    key={email}
+                    type="button"
+                    onClick={() => {
+                      setValue("email", email, { shouldValidate: true })
+                      setValue("password", "preview123", { shouldValidate: true })
+                    }}
+                    className="rounded-lg border border-amber-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 transition hover:border-amber-400 hover:text-amber-800"
+                  >
+                    {label}
+                  </button>
+                ))}
+                <p className="col-span-full text-[10px] text-amber-800">Demo password: preview123</p>
+              </div>
+            )}
 
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -107,9 +144,9 @@ const LoginPage = () => {
               </div>
 
               <div className="text-sm">
-                <a href="#" className="font-medium text-amber-600 hover:text-amber-500">
+                <Link to="/forgot-password" className="font-medium text-amber-600 hover:text-amber-500">
                   Forgot password?
-                </a>
+                </Link>
               </div>
             </div>
 
@@ -146,13 +183,15 @@ const LoginPage = () => {
           </div>
         </motion.div>
 
-        {/* Demo Credentials */}
+        {/* Preview sign-in guidance */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
           className="text-center text-xs text-gray-500 dark:text-gray-400"
         >
+          <p>Preview sign in is enabled. Use any valid email and password.</p>
+          <p>No database connection is required; preview passwords are not saved.</p>
         </motion.div>
       </motion.div>
     </div>

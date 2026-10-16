@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../contexts/AuthContext"
 import api from "../../services/api"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { 
-  faArrowLeft, 
-  faUpload, 
+import {
+  faArrowLeft,
+  faUpload,
   faSpinner,
   faImage,
   faTag,
@@ -17,6 +17,26 @@ import {
   faPlus
 } from "@fortawesome/free-solid-svg-icons"
 import toast from "react-hot-toast"
+import { isPreviewAuth } from "../../services/auth"
+import { createPreviewSellerProduct } from "../../services/previewSellerData"
+
+const imageFileToDataUrl = async (file) => {
+  const bitmap = await createImageBitmap(file)
+  const scale = Math.min(1, 1280 / Math.max(bitmap.width, bitmap.height))
+  const canvas = document.createElement("canvas")
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale))
+  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  bitmap.close()
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.76))
+  if (!blob) throw new Error("This image could not be prepared for local storage")
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = () => reject(new Error("This image could not be read"))
+    reader.readAsDataURL(blob)
+  })
+}
 
 const CreateProductPage = () => {
   const { user } = useAuth()
@@ -25,23 +45,26 @@ const CreateProductPage = () => {
   const [uploadingImages, setUploadingImages] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
+    brand: "",
+    specifications: "",
     description: "",
     price: "",
-    category: "marketplace", // Default to marketplace
+    category: "other",
     condition: "good",
     stock: 1
   })
   const [images, setImages] = useState([])
   const [imagePreviews, setImagePreviews] = useState([])
 
- 
   const categories = [
-    { value: "food", label: "Food & Drinks" },
-    { value: "academic", label: " Academic" },
-    { value: "fashion", label: "Fashion" },
-    { value: "tech-mobile", label: "Tech & Mobile" },
-    { value: "events", label: "Events & Tickets" },
-    { value: "marketplace", label: " Marketplace" }
+    { value: "electronics", label: "Electronics & Gadgets" },
+    { value: "clothing", label: "Clothing & Fashion" },
+    { value: "books", label: "Books & Stationery" },
+    { value: "furniture", label: "Furniture & Home" },
+    { value: "food", label: "Food & Groceries" },
+    { value: "beauty", label: "Beauty & Health" },
+    { value: "sports", label: "Sports & Outdoors" },
+    { value: "other", label: "Other Items" }
   ]
 
   const conditions = [
@@ -59,6 +82,15 @@ const CreateProductPage = () => {
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files)
+    e.target.value = ""
+    if (files.some((file) => !file.type.startsWith("image/"))) {
+      toast.error("Choose image files only")
+      return
+    }
+    if (files.some((file) => file.size > 5 * 1024 * 1024)) {
+      toast.error("Each image must be 5MB or smaller")
+      return
+    }
     if (images.length + files.length > 3) {
       toast.error("Maximum 3 images allowed")
       return
@@ -77,7 +109,7 @@ const CreateProductPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     if (!formData.name || !formData.price || !formData.description) {
       toast.error("Please fill in all required fields")
       return
@@ -95,10 +127,12 @@ const CreateProductPage = () => {
 
     setLoading(true)
     let createdProductId = null
-    
+
     try {
       const productData = {
         name: formData.name,
+        brand: formData.brand.trim(),
+        specifications: formData.specifications.split("\n").map((value) => value.trim()).filter(Boolean),
         description: formData.description,
         price: parseFloat(formData.price),
         category: formData.category,
@@ -106,11 +140,21 @@ const CreateProductPage = () => {
         stock: parseInt(formData.stock)
       }
 
+      if (isPreviewAuth) {
+        const storedImages = await Promise.all(images.map(imageFileToDataUrl))
+        createPreviewSellerProduct(user?.email, { ...productData, images: storedImages })
+        toast.success("Preview listing saved to your seller workspace")
+        navigate("/seller/products")
+        return
+      }
+
       console.log("Creating product with data:", productData)
       const response = await api.post('/products/create/', productData)
       console.log("Full API Response:", response)
       console.log("Response data:", response.data)
-      
+
+      // Try to get product ID from various possible locations
+      // Your backend might return ID directly or in a nested object
       if (response.data.id) {
         createdProductId = response.data.id
         console.log("Found ID directly:", createdProductId)
@@ -121,6 +165,7 @@ const CreateProductPage = () => {
         createdProductId = response.data.product_id
         console.log("Found product_id:", createdProductId)
       } else {
+        // If no ID found, check if we can get it from the product list
         console.warn("No ID found in response, checking product list...")
         const productsResponse = await api.get('/products/my-products/')
         const latestProduct = productsResponse.data.results?.[0] || productsResponse.data?.[0]
@@ -129,25 +174,26 @@ const CreateProductPage = () => {
           console.log("Found ID from product list:", createdProductId)
         }
       }
-      
+
       if (!createdProductId) {
         toast.error("Product created but could not get ID. Images will not be uploaded.")
         setTimeout(() => navigate("/seller/products"), 1500)
         return
       }
-      
+
       toast.success(`Product created! ID: ${createdProductId}`)
-      
+
+      // Upload images if any
       if (images.length > 0) {
         setUploadingImages(true)
-        
+
         let uploadedCount = 0
         for (let i = 0; i < images.length; i++) {
           const formDataImg = new FormData()
           formDataImg.append('image', images[i])
-          
+
           console.log(`Uploading image ${i + 1} to product ${createdProductId}`)
-          
+
           try {
             const uploadResponse = await api.post(`/products/${createdProductId}/upload-image/`, formDataImg, {
               headers: { 'Content-Type': 'multipart/form-data' }
@@ -160,36 +206,40 @@ const CreateProductPage = () => {
             console.error("Error details:", uploadError.response?.data)
             toast.error(`Image ${i + 1} upload failed: ${uploadError.response?.data?.message || "Unknown error"}`)
           }
-          
+
+          // Small delay between uploads
           await new Promise(resolve => setTimeout(resolve, 500))
         }
-        
+
         if (uploadedCount > 0) {
           toast.success(`${uploadedCount} of ${images.length} images uploaded`)
         }
-        
+
         setUploadingImages(false)
       }
-      
+
       toast.success("Product submitted for admin approval!")
-      
+
       setTimeout(() => {
         navigate("/seller/products")
       }, 2000)
-      
+
     } catch (error) {
       console.error("Failed to create product:", error)
       console.error("Error response:", error.response?.data)
-      
-      if (error.response?.data?.category) {
-        toast.error(`Category error: ${error.response.data.category.join(', ')}`)
+
+      let errorMsg = "Failed to create product"
+      if (error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED") {
+        errorMsg = "Browser storage is full. Remove some saved listings or use smaller images, then try again."
       } else if (error.response?.data?.message) {
-        toast.error(error.response.data.message)
+        errorMsg = error.response.data.message
       } else if (error.response?.data?.error) {
-        toast.error(error.response.data.error)
-      } else {
-        toast.error("Failed to create product. Please check your data.")
+        errorMsg = error.response.data.error
+      } else if (error.message) {
+        errorMsg = error.message
       }
+
+      toast.error(errorMsg)
     } finally {
       setLoading(false)
     }
@@ -245,6 +295,11 @@ const CreateProductPage = () => {
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700"
                 required
               />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Brand (optional)<input type="text" name="brand" value={formData.brand} onChange={handleChange} maxLength={80} placeholder="e.g. Apple" className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-gray-700 dark:bg-gray-700" /></label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Specifications (optional)<textarea name="specifications" value={formData.specifications} onChange={handleChange} rows={2} placeholder="One detail per line, e.g. 256 GB storage" className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-gray-700 dark:bg-gray-700" /><span className="mt-1 block text-xs font-normal text-gray-500">Add key product details on separate lines.</span></label>
             </div>
 
             {/* Price and Stock */}
@@ -325,7 +380,7 @@ const CreateProductPage = () => {
                 <FontAwesomeIcon icon={faImage} className="mr-2 text-amber-500" />
                 Product Images (Max 3 images)
               </label>
-              
+
               {imagePreviews.length > 0 && (
                 <div className="grid grid-cols-3 gap-3 mb-3">
                   {imagePreviews.map((preview, index) => (
@@ -346,7 +401,7 @@ const CreateProductPage = () => {
                   ))}
                 </div>
               )}
-              
+
               {imagePreviews.length < 3 && (
                 <div>
                   <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-amber-500 transition-colors">
