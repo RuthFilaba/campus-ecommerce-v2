@@ -18,11 +18,12 @@ import {
   faCheckCircle
 } from "@fortawesome/free-solid-svg-icons";
 import toast from "react-hot-toast";
-import { getPreviewBuyerOrderStatus, readPreviewOrders } from "../../services/previewOrders";
+import { cancelPreviewOrder, getPreviewBuyerOrderStatus, readPreviewOrders, submitPreviewPaymentReference } from "../../services/previewOrders";
 import PremiumBreadcrumb from "../../components/common/PremiumBreadcrumb";
 import { formatMoney } from "../../services/currency";
 import OrderTrackingTimeline from "../../components/order/OrderTrackingTimeline";
 import { groupPreviewOrderItems } from "../../services/orderTracking";
+import BuyerDisputeDetails from "./BuyerDisputeDetails";
 
 const OrderDetailPage = () => {
   const { id } = useParams();
@@ -34,6 +35,8 @@ const OrderDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [markingReady, setMarkingReady] = useState(false);
+  const [paymentReference, setPaymentReference] = useState("");
+  const [paymentFiles, setPaymentFiles] = useState([]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -129,6 +132,23 @@ const OrderDetailPage = () => {
     toast.success("Payment confirmed! Order status updated.");
   };
 
+  const submitPaymentReference = async () => {
+    const evidence = await Promise.all(paymentFiles.map((file) => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve({ name: file.name, type: file.type, data: reader.result }); reader.onerror = reject; reader.readAsDataURL(file); })));
+    const result = submitPreviewPaymentReference(order.id, user?.email, paymentReference, evidence);
+    if (result.error) { toast.error(result.error); return; }
+    setPaymentReference("");
+    setPaymentFiles([]);
+    setOrder({ ...result.order, isPreview: true });
+    toast.success("Payment reference submitted for administrator review.");
+  };
+  const cancelCurrentPreviewOrder = () => {
+    if (!window.confirm("Cancel this order? If prepaid funds were verified, the payment will move to refund review.")) return;
+    const result = cancelPreviewOrder(order.id, user?.email);
+    if (result.error) { toast.error(result.error); return; }
+    setOrder({ ...result.order, isPreview: true });
+    toast.success(result.order.paymentStatus === "Refund Pending" ? "Order cancelled. Refund request sent for review." : "Order cancelled.");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -157,10 +177,14 @@ const OrderDetailPage = () => {
             <h2 className="mt-5 text-sm font-bold text-slate-900">Items</h2>
             <ul className="mt-2 divide-y divide-slate-100">{order.items.map(({ product, quantity }, index) => <li key={`${product.id}-${index}`} className="flex items-center gap-3 py-4"><img src={getProductPrimaryImage(product)} alt="" className="h-16 w-16 shrink-0 rounded-xl bg-slate-100 object-cover" /><div className="min-w-0 flex-1"><Link to={`/products/${product.id}`} className="text-sm font-semibold text-slate-900 hover:text-amber-700">{product.name}</Link><p className="mt-1 text-xs text-slate-500">{product.seller_name} · Quantity {quantity}</p></div><span className="text-sm font-bold text-slate-900">{formatMoney(Number(product.price) * quantity)}</span></li>)}</ul>
             <div className="mt-5 space-y-4 border-t border-slate-100 pt-5"><div><h2 className="text-sm font-bold text-slate-900">Track your items</h2><p className="mt-1 text-xs text-slate-500">Follow each seller's preparation and pickup progress.</p></div>{sellerGroups.map((group) => <div key={group.key} className="space-y-2"><p className="text-xs font-semibold text-slate-700">{group.sellerName}</p><OrderTrackingTimeline status={group.tracking.status} events={group.tracking.events} note={group.tracking.note} meetupLocation={order.meetupLocation} /></div>)}</div>
-            <div className="mt-4 grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2"><div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Meetup location</p><p className="mt-1 text-sm font-semibold text-slate-800">{order.meetupLocation}</p>{order.meetupNotes && <p className="mt-1 text-xs leading-5 text-slate-500">{order.meetupNotes}</p>}</div><div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Payment preference</p><p className="mt-1 text-sm font-semibold text-slate-800">{paymentLabels[order.paymentPreference] || "Not selected"}</p></div></div>
+            <div className="mt-4 grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2"><div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Meetup location</p><p className="mt-1 text-sm font-semibold text-slate-800">{order.meetupLocation}</p>{order.meetupNotes && <p className="mt-1 text-xs leading-5 text-slate-500">{order.meetupNotes}</p>}</div><div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Payment</p><p className="mt-1 text-sm font-semibold text-slate-800">{paymentLabels[order.paymentPreference] || "Not selected"}</p><span className="mt-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-700">{order.paymentStatus || (order.paymentPreference === "meetup-cash" ? "Awaiting Collection" : "Awaiting Payment")}</span>{order.paymentReference && <p className="mt-2 text-xs text-slate-500">Reference: <span className="font-mono font-semibold text-slate-700">{order.paymentReference}</span></p>}</div></div>
+            {order.paymentPreference !== "meetup-cash" && ["Awaiting Payment", "Verification Failed", "Disputed"].includes(order.paymentStatus || "Awaiting Payment") && <form onSubmit={(event) => { event.preventDefault(); submitPaymentReference(); }} className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4"><h2 className="text-xs font-bold text-slate-900">Submit payment reference</h2><p className="mt-1 text-[11px] leading-5 text-slate-500">After you pay by Mobile Money or bank transfer, enter the transaction reference. An administrator will verify the funds manually.</p><div className="mt-3 flex flex-col gap-2 sm:flex-row"><input required value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} maxLength={100} placeholder="Transaction reference" className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none focus:border-slate-400" /><button type="submit" className="h-10 rounded-lg bg-slate-950 px-4 text-xs font-semibold text-white hover:bg-slate-800">Send for review</button></div><label className="mt-3 block text-[11px] font-semibold text-slate-600">Payment proof (optional: up to 3 images or PDFs, 2 MB each)<input type="file" accept="image/*,application/pdf" multiple onChange={(event) => { const selected = Array.from(event.target.files || []).slice(0, 3); if (selected.some((file) => file.size > 2 * 1024 * 1024)) { toast.error("Each file must be 2 MB or smaller."); event.target.value = ""; return; } setPaymentFiles(selected); }} className="mt-1.5 block w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:font-semibold" /></label></form>}
+            {!order.paymentDispute && !["Refund Pending", "Refunded"].includes(order.paymentStatus) && <div className="mt-3 rounded-xl border border-rose-100 p-4"><p className="text-xs font-semibold text-slate-800">Something wrong with this order?</p><p className="mt-1 text-[11px] text-slate-500">Send a report with details and supporting evidence for the seller and administrator to review.</p><Link to={`/orders/${order.id}/report`} className="mt-3 inline-flex h-9 items-center rounded-lg border border-rose-200 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-50">Report a problem</Link></div>}
+            <BuyerDisputeDetails order={order} buyerEmail={user?.email} />
             <div className="mt-5 flex justify-between border-t border-slate-100 pt-5"><span className="text-sm font-semibold text-slate-700">Order total</span><span className="text-lg font-bold text-slate-950">{formatMoney(order.total ?? order.subtotal)}</span></div>
+            {order.status !== "Cancelled" && order.status !== "Refunded" && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4"><p className="text-[11px] text-slate-500">Cancel before the seller marks the order ready for pickup.</p><button type="button" onClick={cancelCurrentPreviewOrder} className="h-9 rounded-lg border border-rose-200 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-50">Cancel order</button></div>}
           </div>
-          <p className="mt-4 text-center text-[11px] text-slate-400">This preview is saved on this device. No seller was notified and no payment was processed.</p>
+          <p className="mt-4 text-center text-[11px] text-slate-400">Preview data is stored on this device. Payment references are not sent to a provider; administrators review them manually.</p>
         </div>
       </div>
     );

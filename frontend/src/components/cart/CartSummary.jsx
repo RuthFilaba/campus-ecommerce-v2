@@ -35,7 +35,7 @@ const CartSummary = ({ cart, onCheckout }) => {
           type: response.data.discount_type
         })
         setDiscountAmount(response.data.discount)
-        toast.success(`Coupon applied! You saved ZMW ${response.data.discount.toFixed(2)}`)
+        toast.success(`Coupon applied! You saved K ${response.data.discount.toFixed(2)}`)
       } else {
         toast.error(response.data.message || "Invalid coupon code")
       }
@@ -61,33 +61,33 @@ const CartSummary = ({ cart, onCheckout }) => {
       {/* Items Count */}
       <div className="flex justify-between py-2 text-gray-600 dark:text-gray-400">
         <span>Subtotal ({cart.total_items || cart.items?.length || 0} items)</span>
-        <span>ZMW {subtotal.toFixed(2)}</span>
+        <span>K {subtotal.toFixed(2)}</span>
       </div>
       
       {/* Shipping */}
       <div className="flex justify-between py-2 text-gray-600 dark:text-gray-400">
         <span>Shipping</span>
-        <span>{shipping === 0 ? "FREE" : `ZMW ${shipping.toFixed(2)}`}</span>
+        <span>{shipping === 0 ? "FREE" : `K ${shipping.toFixed(2)}`}</span>
       </div>
       
       {/* Tax */}
       <div className="flex justify-between py-2 text-gray-600 dark:text-gray-400">
         <span>Tax (5%)</span>
-        <span>ZMW {tax.toFixed(2)}</span>
+        <span>K {tax.toFixed(2)}</span>
       </div>
       
       {/* Discount */}
       {discountAmount > 0 && (
         <div className="flex justify-between py-2 text-green-600">
           <span>Discount ({appliedCoupon?.code})</span>
-          <span>- ZMW {discountAmount.toFixed(2)}</span>
+          <span>- K {discountAmount.toFixed(2)}</span>
         </div>
       )}
       
       {/* Total */}
       <div className="flex justify-between py-3 mt-2 border-t border-gray-200 dark:border-gray-700 font-bold text-lg">
         <span>Total</span>
-        <span className="text-amber-600 dark:text-amber-400">ZMW {total.toFixed(2)}</span>
+        <span className="text-amber-600 dark:text-amber-400">K {total.toFixed(2)}</span>
       </div>
       
       {/* Coupon Section */}
@@ -134,7 +134,7 @@ const CartSummary = ({ cart, onCheckout }) => {
       
       {/* Shipping Info */}
       <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-xs text-gray-500 space-y-1">
-        <p><FontAwesomeIcon icon={faTruck} className="mr-2 w-3" />Free shipping on orders over ZMW 500</p>
+        <p><FontAwesomeIcon icon={faTruck} className="mr-2 w-3" />Free shipping on orders over K 500</p>
         <p><FontAwesomeIcon icon={faShieldAlt} className="mr-2 w-3" />Secure checkout with campus verification</p>
       </div>
       

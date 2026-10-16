@@ -31,5 +31,5 @@ export function formatMoney(amount, currency = readPreferredCurrency()) {
     if (!rate) return `USD ${numericAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} - rate not set`;
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(numericAmount / rate);
   }
-  return new Intl.NumberFormat("en-ZM", { style: "currency", currency: "ZMW", currencyDisplay: "narrowSymbol" }).format(numericAmount);
+  return `K ${new Intl.NumberFormat("en-ZM", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(numericAmount)}`;
 }

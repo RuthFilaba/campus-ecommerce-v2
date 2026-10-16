@@ -48,7 +48,7 @@ const Recommendations = () => {
               </button>
             </div>
             <p className="text-sm font-medium line-clamp-1">{product.name}</p>
-            <p className="text-amber-600 font-bold text-sm mt-1">ZMW {product.price}</p>
+            <p className="text-amber-600 font-bold text-sm mt-1">K {product.price}</p>
           </Link>
         ))}
       </div>

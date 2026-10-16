@@ -10,7 +10,7 @@ import { formatMoney } from "../../services/currency";
 
 export default function WishlistPage() {
   const [savedIds, setSavedIds] = useState(() => readPreviewWishlist());
-  const catalogue = [...previewProducts, ...readAllPreviewSellerProducts()];
+  const catalogue = [...previewProducts, ...readAllPreviewSellerProducts().filter((product) => product.is_active !== false && product.is_approved === true)];
   const savedProducts = savedIds.map((id) => catalogue.find((product) => String(product.id) === String(id))).filter(Boolean);
 
   const removeSaved = (id) => {

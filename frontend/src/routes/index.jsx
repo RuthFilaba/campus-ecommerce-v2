@@ -22,6 +22,7 @@ const CartPage = lazy(() => import("../pages/buyer/CartPage"));
 const CheckoutPage = lazy(() => import("../pages/buyer/CheckoutPage"));
 const OrdersPage = lazy(() => import("../pages/buyer/OrdersPage"));
 const OrderDetailPage = lazy(() => import("../pages/buyer/OrderDetailPage"));
+const BuyerReportProblemPage = lazy(() => import("../pages/buyer/BuyerReportProblemPage"));
 const WishlistPage = lazy(() => import("../pages/buyer/WishlistPage"));
 const MessagesPage = lazy(() => import("../pages/MessagesPage"));
 
@@ -34,7 +35,11 @@ const StoreSettingsPage = lazy(() => import("../pages/seller/SellerSettingsRoute
 const MySalesPage = lazy(() => import("../pages/seller/SellerSalesRoute"));
 const SellerOrderDetailPage = lazy(() => import("../pages/seller/SellerOrderDetailPage"));
 const SellerActiveOrdersPage = lazy(() => import("../pages/seller/SellerOrdersRoute"));
+const SellerPaymentsPage = lazy(() => import("../pages/seller/SellerPaymentsPage"));
+const SellerApplicationPage = lazy(() => import("../pages/seller/SellerApplicationPage"));
+const SellerDisputesPage = lazy(() => import("../pages/seller/SellerDisputesPage"));
 const AdminDashboardPage = lazy(() => import("../pages/admin/AdminDashboardPage"));
+const AdminDisputesPage = lazy(() => import("../pages/admin/AdminDisputesPage"));
 
 const AppRoutes = () => {
   const { user, isAuthenticated, loading } = useAuth();
@@ -72,25 +77,30 @@ const AppRoutes = () => {
             
             <Route path="/orders" element={isBuyer ? <OrdersPage /> : <Navigate to={buyerRedirect} replace />} />
             <Route path="/orders/:id" element={isBuyer ? <OrderDetailPage /> : <Navigate to={buyerRedirect} replace />} />
+            <Route path="/orders/:id/report" element={isBuyer ? <BuyerReportProblemPage /> : <Navigate to={buyerRedirect} replace />} />
 
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="/admin/dashboard" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
+            <Route path="/admin/sellers" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
             <Route path="/admin/products" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
             <Route path="/admin/orders" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
+            <Route path="/admin/disputes" element={isAuthenticated && isAdmin ? <AdminDisputesPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
             <Route path="/admin/customers" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
             <Route path="/admin/coupons" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
             <Route path="/admin/reports" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
             <Route path="/admin/activity" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
             <Route path="/admin/settings" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
 
-            <Route path="/seller/dashboard" element={isAuthenticated && isSeller ? <SellerDashboardPage /> : <Navigate to="/" />} />
-            <Route path="/seller/products" element={isAuthenticated && isSeller ? <ManageProductsPage /> : <Navigate to="/" />} />
-            <Route path="/seller/products/create" element={isAuthenticated && isSeller ? <CreateProductPage /> : <Navigate to="/" />} />
-            <Route path="/seller/products/edit/:id" element={isAuthenticated && isSeller ? <EditProductPage /> : <Navigate to="/" />} />
-            <Route path="/seller/orders" element={isAuthenticated && isSeller ? <SellerActiveOrdersPage /> : <Navigate to="/" />} />
-            <Route path="/seller/settings" element={isAuthenticated && isSeller ? <StoreSettingsPage /> : <Navigate to="/" />} />
-            <Route path="/seller/sales" element={isAuthenticated && isSeller ? <MySalesPage /> : <Navigate to="/" />} />
-            <Route path="/seller/orders/:id" element={isAuthenticated && isSeller ? <SellerOrderDetailPage /> : <Navigate to="/" />} />
+            <Route path="/seller/dashboard" element={isAuthenticated && isSeller ? (user.seller_status && user.seller_status !== "approved" ? <SellerApplicationPage /> : <SellerDashboardPage />) : <Navigate to="/" />} />
+            <Route path="/seller/products" element={isAuthenticated && isSeller ? (user.seller_status && user.seller_status !== "approved" ? <SellerApplicationPage /> : <ManageProductsPage />) : <Navigate to="/" />} />
+            <Route path="/seller/products/create" element={isAuthenticated && isSeller ? (user.seller_status && user.seller_status !== "approved" ? <SellerApplicationPage /> : <CreateProductPage />) : <Navigate to="/" />} />
+            <Route path="/seller/products/edit/:id" element={isAuthenticated && isSeller ? (user.seller_status && user.seller_status !== "approved" ? <SellerApplicationPage /> : <EditProductPage />) : <Navigate to="/" />} />
+            <Route path="/seller/orders" element={isAuthenticated && isSeller ? (user.seller_status && user.seller_status !== "approved" ? <SellerApplicationPage /> : <SellerActiveOrdersPage />) : <Navigate to="/" />} />
+            <Route path="/seller/payments" element={isAuthenticated && isSeller ? (user.seller_status && user.seller_status !== "approved" ? <SellerApplicationPage /> : <SellerPaymentsPage />) : <Navigate to="/" />} />
+            <Route path="/seller/settings" element={isAuthenticated && isSeller ? (user.seller_status && user.seller_status !== "approved" ? <SellerApplicationPage /> : <StoreSettingsPage />) : <Navigate to="/" />} />
+            <Route path="/seller/sales" element={isAuthenticated && isSeller ? (user.seller_status && user.seller_status !== "approved" ? <SellerApplicationPage /> : <MySalesPage />) : <Navigate to="/" />} />
+            <Route path="/seller/disputes" element={isAuthenticated && isSeller ? (user.seller_status && user.seller_status !== "approved" ? <SellerApplicationPage /> : <SellerDisputesPage />) : <Navigate to="/" />} />
+            <Route path="/seller/orders/:id" element={isAuthenticated && isSeller ? (user.seller_status && user.seller_status !== "approved" ? <SellerApplicationPage /> : <SellerOrderDetailPage />) : <Navigate to="/" />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

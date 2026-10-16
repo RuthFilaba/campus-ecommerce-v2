@@ -143,7 +143,7 @@ const CreateProductPage = () => {
       if (isPreviewAuth) {
         const storedImages = await Promise.all(images.map(imageFileToDataUrl))
         createPreviewSellerProduct(user?.email, { ...productData, images: storedImages })
-        toast.success("Preview listing saved to your seller workspace")
+        toast.success("Listing submitted for administrator approval")
         navigate("/seller/products")
         return
       }
@@ -307,7 +307,7 @@ const CreateProductPage = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   <FontAwesomeIcon icon={faDollarSign} className="mr-2 text-amber-500" />
-                  Price (ZMW) *
+                  Price (K) *
                 </label>
                 <input
                   type="number"

@@ -75,7 +75,7 @@ const ProfilePage = () => {
             <div>
               <label htmlFor="preferred-currency" className="block text-sm font-medium mb-1">Preferred currency</label>
               <select id="preferred-currency" value={preferredCurrency} onChange={(event) => { setPreferredCurrency(event.target.value); writePreferredCurrency(event.target.value) }} className="w-full rounded-lg border bg-white px-4 py-2 focus:ring-2 focus:ring-amber-500">
-                <option value="ZMW">Zambian Kwacha (ZMW)</option>
+                <option value="ZMW">Zambian Kwacha (K)</option>
                 <option value="USD">US Dollar (USD)</option>
               </select>
               <p className="mt-1 text-xs text-gray-500">USD conversion uses the preview exchange rate set by an administrator.</p>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check, Heart, MapPin, Minus, Plus, ShieldCheck, ShoppingBag, Star, Store } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, Heart, MapPin, Minus, Plus, ShieldCheck, ShoppingBag, Star, Store } from "lucide-react";
 import toast from "react-hot-toast";
 import { useCart } from "../contexts/CartContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -13,6 +13,7 @@ import { readAllPreviewSellerProducts } from "../services/previewSellerData";
 import { getProductImages } from "../utils/productImages";
 import { canReviewPreviewProduct, createPreviewReview, readPreviewReviews } from "../services/previewReviews";
 import { formatMoney } from "../services/currency";
+import { submitPreviewListingReport } from "../services/previewListingReports";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -23,7 +24,7 @@ export default function ProductDetailPage() {
   const isAdmin = user?.role === "admin";
   const catalogue = useMemo(() => [
     ...previewProducts,
-    ...(isPreviewAuth ? readAllPreviewSellerProducts().filter((item) => item.is_active !== false) : []),
+    ...(isPreviewAuth ? readAllPreviewSellerProducts().filter((item) => item.is_active !== false && item.is_approved === true) : []),
   ], []);
   const product = catalogue.find((item) => String(item.id) === String(id));
   const productId = product?.id;
@@ -35,6 +36,9 @@ export default function ProductDetailPage() {
   const [reviews, setReviews] = useState(() => product ? readPreviewReviews(product.id) : []);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
 
   useEffect(() => {
     setReviews(productId ? readPreviewReviews(productId) : []);
@@ -105,6 +109,14 @@ export default function ProductDetailPage() {
     toast.success("Your review has been saved to this preview.");
   };
 
+  const submitListingReport = (event) => {
+    event.preventDefault();
+    const result = submitPreviewListingReport(product.id, product.name, user?.email, reportReason, reportDetails);
+    if (result.error) { toast.error(result.error); return; }
+    setReportOpen(false); setReportReason(""); setReportDetails("");
+    toast.success(`Listing report ${result.report.id} submitted for review.`);
+  };
+
   const buyerCanReview = user?.role === "buyer" && canReviewPreviewProduct(product.id, user.email);
   const alreadyReviewed = reviews.some((review) => review.buyerEmail === user?.email?.toLowerCase());
   const averageRating = reviews.length ? reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length : Number(product.rating || 0);
@@ -150,6 +162,8 @@ export default function ProductDetailPage() {
               <div className="rounded-xl border border-slate-200/80 bg-white p-3.5"><span className="block text-[10px] font-bold uppercase tracking-[.1em] text-slate-400">Condition</span><span className="mt-1 block text-sm font-semibold text-slate-800">{getConditionLabel(product.condition)}</span></div>
               <div className="rounded-xl border border-slate-200/80 bg-white p-3.5"><span className="block text-[10px] font-bold uppercase tracking-[.1em] text-slate-400">Availability</span><span className="mt-1 block text-sm font-semibold text-slate-800">{product.stock} {product.stock === 1 ? "item" : "items"} available</span></div>
             </div>
+
+            {!isSeller && !isAdmin && <div className="mt-3"><button type="button" onClick={() => setReportOpen((open) => !open)} aria-expanded={reportOpen} className="inline-flex min-h-9 items-center gap-1.5 text-xs font-semibold text-slate-500 transition hover:text-rose-700"><AlertTriangle size={14} /> Report this listing</button>{reportOpen && <form onSubmit={submitListingReport} className="mt-2 rounded-xl border border-rose-100 bg-white p-4"><p className="text-xs font-bold text-slate-800">Tell us what’s wrong with this listing</p><label className="mt-3 block text-xs font-semibold text-slate-700">Reason<select required value={reportReason} onChange={(event) => setReportReason(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs"><option value="">Choose a reason</option><option value="misleading">Misleading details or price</option><option value="inappropriate">Inappropriate content</option><option value="prohibited">Prohibited item</option><option value="duplicate">Duplicate listing</option><option value="other">Other concern</option></select></label><label className="mt-3 block text-xs font-semibold text-slate-700">Details<textarea required minLength={8} maxLength={700} rows={3} value={reportDetails} onChange={(event) => setReportDetails(event.target.value)} placeholder="Explain the concern so the team can review it." className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-normal" /></label><button type="submit" className="mt-3 h-9 rounded-lg bg-amber-400 px-3.5 text-xs font-bold text-slate-950">Submit report</button></form>}</div>}
 
             {!isSeller && !isAdmin ? <div className="mt-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex h-12 items-center rounded-xl border border-slate-200 bg-white p-1">

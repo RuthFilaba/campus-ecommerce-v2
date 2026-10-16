@@ -9,7 +9,7 @@ const TAX_RATE_KEY = "campusecom.previewTaxRate.v1";
 
 const demoUsers = [
   { id: "demo-buyer", email: "buyer@campusecom.zm", first_name: "Preview", last_name: "Buyer", role: "buyer", is_active: true },
-  { id: "demo-seller", email: "seller@campusecom.zm", first_name: "Preview", last_name: "Seller", role: "seller", is_active: true },
+  { id: "demo-seller", email: "seller@campusecom.zm", first_name: "Preview", last_name: "Seller", role: "seller", seller_status: "approved", is_active: true },
   { id: "demo-admin", email: "admin@campusecom.zm", first_name: "Preview", last_name: "Admin", role: "admin", is_active: true },
 ];
 
@@ -55,7 +55,20 @@ export function writeAdminPreviewTaxRate(rate) {
 export function readAdminPreviewUsers() {
   const users = readArray(USERS_KEY);
   const known = new Set(users.map((user) => user.email?.toLowerCase()));
-  return [...users, ...demoUsers.filter((user) => !known.has(user.email))].map((user) => ({ is_active: true, ...user }));
+  return [...users, ...demoUsers.filter((user) => !known.has(user.email))].map((user) => ({ is_active: true, ...(user.role === "seller" && !user.seller_status ? { seller_status: "approved" } : {}), ...user }));
+}
+
+export function setAdminPreviewSellerStatus(userId, status, reason = "") {
+  if (!["approved", "rejected", "suspended"].includes(status)) return { error: "Invalid seller application status." };
+  if (["rejected", "suspended"].includes(status) && !String(reason).trim()) return { error: "Add a reason before rejecting or suspending this seller." };
+  const users = readArray(USERS_KEY);
+  const target = users.find((user) => String(user.id) === String(userId) && user.role === "seller");
+  if (!target) return { error: "Seller account not found. Demo accounts are read-only." };
+  const updated = users.map((user) => String(user.id) === String(userId)
+    ? { ...user, seller_status: status, seller_status_reason: String(reason).trim(), seller_status_updated_at: new Date().toISOString() }
+    : user);
+  writeArray(USERS_KEY, updated);
+  return { user: updated.find((user) => String(user.id) === String(userId)) };
 }
 
 export function setAdminPreviewUserActive(userId, isActive) {

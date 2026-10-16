@@ -91,7 +91,9 @@ const ManageProductsPage = () => {
   };
 
   const getStatusBadge = (product) => {
-    if (!product.is_approved && product.is_submitted) {
+    if (product.approval_status === "rejected") {
+      return { text: "Rejected", color: "bg-red-100 text-red-800", icon: faTimesCircle };
+    } else if (!product.is_approved && product.is_submitted) {
       return {
         text: "Pending",
         color: "bg-yellow-100 text-yellow-800",

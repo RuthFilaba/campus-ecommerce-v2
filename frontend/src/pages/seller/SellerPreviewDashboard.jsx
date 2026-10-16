@@ -11,6 +11,7 @@ import {
   Settings2,
   ShoppingBag,
   Store,
+  Wallet,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { readPreviewSellerOrders, readPreviewSellerProducts, readPreviewSellerSettings } from "../../services/previewSellerData";
@@ -25,14 +26,16 @@ export default function SellerPreviewDashboard() {
   const activeProducts = products.filter((product) => product.is_active && Number(product.stock) > 0);
   const outOfStock = products.filter((product) => Number(product.stock) === 0).length;
   const lowStock = products.filter((product) => Number(product.stock) > 0 && Number(product.stock) <= 5).length;
-  const ordersToFulfill = orders.filter((order) => !["completed", "cancelled"].includes(String(order.status).toLowerCase()));
-  const completedOrders = orders.filter((order) => String(order.status).toLowerCase() === "completed");
-  const revenue = completedOrders.reduce((sum, order) => sum + Number(order.sellerSubtotal || 0), 0);
+  const ordersToFulfill = orders.filter((order) => !["completed", "delivered", "cancelled", "refunded"].includes(String(order.status).toLowerCase()));
+  const completedOrders = orders.filter((order) => ["completed", "delivered"].includes(String(order.status).toLowerCase()));
+  const revenue = orders.filter((order) => order.paymentStatus === "Verified").reduce((sum, order) => sum + Number(order.sellerSubtotal || 0), 0);
+  const paymentsToReview = orders.filter((order) => ["Awaiting Verification", "Disputed"].includes(order.paymentStatus)).length;
   const stats = [
     { label: "Active listings", value: activeProducts.length, detail: `${products.length} total`, icon: Package, href: "/seller/products", tone: "amber" },
     { label: "Orders to fulfill", value: ordersToFulfill.length, detail: "Needs your attention", icon: ClipboardList, href: "/seller/orders", tone: "blue" },
     { label: "Completed sales", value: completedOrders.length, detail: "Preview orders", icon: BarChart3, href: "/seller/sales", tone: "green" },
-    { label: "Revenue", value: formatMoney(revenue), detail: "Completed orders", icon: CircleDollarSign, href: "/seller/sales", tone: "violet" },
+    { label: "Revenue", value: formatMoney(revenue), detail: "Verified payments", icon: CircleDollarSign, href: "/seller/sales", tone: "violet" },
+    { label: "Payment reviews", value: paymentsToReview, detail: "Awaiting admin review", icon: Wallet, href: "/seller/payments", tone: "amber" },
   ];
   const toneClasses = {
     amber: "bg-amber-50 text-amber-700",
@@ -53,7 +56,7 @@ export default function SellerPreviewDashboard() {
           <Link to="/seller/products/create" className="inline-flex h-11 items-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800"><Plus size={16} /> Add a listing</Link>
         </header>
 
-        <section aria-label="Store performance" className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <section aria-label="Store performance" className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {stats.map(({ label, value, detail, icon: Icon, href, tone }) => (
             <Link key={label} to={href} className="group rounded-2xl border border-slate-200/80 bg-white p-5 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-400/30">
               <div className="flex items-center justify-between gap-3"><span className="text-xs font-semibold text-slate-500">{label}</span><span className={`grid h-9 w-9 place-items-center rounded-xl ${toneClasses[tone]}`}><Icon size={17} /></span></div>

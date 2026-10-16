@@ -42,7 +42,7 @@ const WishlistPreview = () => {
             <img src={getProductPrimaryImage(item, item.image || "https://placehold.co/60x60")} alt="" className="w-12 h-12 rounded-lg object-cover" />
             <div className="flex-1">
               <p className="font-medium text-sm">{item.name}</p>
-              <p className="text-amber-600 font-semibold text-sm">ZMW {item.price}</p>
+              <p className="text-amber-600 font-semibold text-sm">K {item.price}</p>
             </div>
           </div>
         ))}

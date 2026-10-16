@@ -43,14 +43,30 @@ export function createPreviewSellerProduct(ownerEmail, productData) {
     id: `seller-preview-${Date.now()}`,
     ...productData,
     owner_email: normalizedEmail,
-    is_active: true,
-    is_approved: true,
+    is_active: false,
+    is_approved: false,
     is_submitted: true,
+    approval_status: "pending",
     created_at: new Date().toISOString(),
     image_url: productData.images?.[0] || "",
   };
   writeAllProducts([product, ...products]);
   return product;
+}
+
+export function setAdminPreviewProductApproval(ownerEmail, productId, status, reason = "") {
+  if (!["approved", "rejected"].includes(status)) return { error: "Invalid product decision." };
+  if (status === "rejected" && !String(reason).trim()) return { error: "Add a reason before rejecting this product listing." };
+  const normalizedEmail = String(ownerEmail || "").toLowerCase();
+  const products = readAllProducts();
+  const exists = products.some((product) => product.owner_email === normalizedEmail && String(product.id) === String(productId));
+  if (!exists) return { error: "Product listing not found." };
+  const updated = products.map((product) => product.owner_email === normalizedEmail && String(product.id) === String(productId)
+    ? { ...product, approval_status: status, is_approved: status === "approved", is_active: status === "approved", approval_reason: String(reason).trim(), reviewed_at: new Date().toISOString() }
+    : product);
+  writeAllProducts(updated);
+  window.dispatchEvent(new Event("campusecom:preview-products-change"));
+  return { product: updated.find((product) => product.owner_email === normalizedEmail && String(product.id) === String(productId)) };
 }
 
 export function deletePreviewSellerProduct(ownerEmail, productId) {
@@ -120,7 +136,7 @@ export function updatePreviewSellerOrderStatus(ownerEmail, orderId, status) {
 }
 
 export function updatePreviewSellerOrderTracking(ownerEmail, orderId, updates = {}) {
-  if (!ownerEmail) return false;
+  if (!ownerEmail) return { error: "Seller account could not be identified." };
   const normalizedEmail = ownerEmail.toLowerCase();
   const orders = (() => {
     try {
@@ -131,7 +147,11 @@ export function updatePreviewSellerOrderTracking(ownerEmail, orderId, updates = 
     }
   })();
   const order = orders.find((candidate) => String(candidate.id) === String(orderId));
-  if (!order || !(order.items || []).some(({ product }) => product?.owner_email === normalizedEmail)) return false;
+  if (!order || !(order.items || []).some(({ product }) => product?.owner_email === normalizedEmail)) return { error: "Order not found for this seller." };
+  if (["Cancelled", "Refunded"].includes(order.status)) return { error: "This order is no longer active." };
+  if (updates.status && (String(updates.status).toLowerCase().includes("ready") || String(updates.status).toLowerCase().includes("deliver") || String(updates.status).toLowerCase().includes("ship")) && order.paymentPreference !== "meetup-cash" && order.paymentStatus !== "Verified") {
+    return { error: "Prepaid orders must be verified by an administrator before they can be marked ready for pickup." };
+  }
   const previous = order.sellerTracking?.[normalizedEmail] || {
     status: order.sellerStatuses?.[normalizedEmail] || order.status || "Pending seller confirmation",
     note: "",
@@ -143,12 +163,22 @@ export function updatePreviewSellerOrderTracking(ownerEmail, orderId, updates = 
   const changed = String(status) !== String(previous.status) || note !== (previous.note || "");
   const events = Array.isArray(previous.events) ? [...previous.events] : [];
   if (changed) events.push({ status, note, at: now });
-  order.sellerStatuses = { ...(order.sellerStatuses || {}), [normalizedEmail]: status };
+  const cancelled = String(status).toLowerCase() === "cancelled";
+  order.sellerStatuses = cancelled
+    ? Object.fromEntries(Object.keys(order.sellerTracking || {}).map((email) => [email, "Cancelled"]))
+    : { ...(order.sellerStatuses || {}), [normalizedEmail]: status };
+  if (cancelled) {
+    order.status = "Cancelled";
+    if (order.paymentStatus === "Verified") {
+      order.paymentStatus = "Refund Pending";
+      order.paymentHistory = [...(order.paymentHistory || []), { status: "Refund Pending", note: "Seller cancelled the order; refund review required", actor: normalizedEmail, at: now }];
+    }
+  }
   order.sellerTracking = {
     ...(order.sellerTracking || {}),
     [normalizedEmail]: { ...previous, status, note, updatedAt: changed ? now : previous.updatedAt || now, events },
   };
   window.localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
   window.dispatchEvent(new Event("campusecom:preview-orders-change"));
-  return true;
+  return { success: true };
 }

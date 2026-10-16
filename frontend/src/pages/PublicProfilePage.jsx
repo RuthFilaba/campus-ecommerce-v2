@@ -288,7 +288,7 @@ const PublicProfilePage = () => {
                   <div className="p-3">
                     <h3 className="font-semibold text-sm line-clamp-1">{product.name}</h3>
                     <p className="text-amber-600 font-bold text-sm mt-1">
-                      ZMW {parseFloat(product.price).toFixed(2)}
+                      K {parseFloat(product.price).toFixed(2)}
                     </p>
                   </div>
                 </Link>

@@ -132,7 +132,7 @@ const AdminProductsPage = () => {
                 </div>
               </td>
               <td className="px-4 py-3">{product.seller_name || product.seller?.name}</td>
-              <td className="px-4 py-3">ZMW {product.price}</td>
+              <td className="px-4 py-3">K {product.price}</td>
               <td className="px-4 py-3">
                 {product.is_approved ? (
                   <span className="text-green-600">? Approved</span>

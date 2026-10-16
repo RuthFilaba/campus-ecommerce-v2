@@ -22,6 +22,8 @@ export default function OrdersPage() {
   const [revision, setRevision] = useState(0);
   const [apiOrders, setApiOrders] = useState([]);
   const [loading, setLoading] = useState(!isPreviewAuth);
+  const [orderSearch, setOrderSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   useEffect(() => {
     const refreshOrders = () => setRevision((value) => value + 1);
     window.addEventListener("campusecom:preview-orders-change", refreshOrders);
@@ -46,6 +48,7 @@ export default function OrdersPage() {
         total: order.total_price,
         subtotal: order.total_price,
         paymentPreference: order.payment?.payment_method || "",
+        paymentStatus: order.payment?.status_display || order.payment?.status || "",
         items: [{
           product: { id: order.product, name: order.product_name, image_url: order.product_image, seller_name: order.seller_name, price: order.unit_price },
           quantity: order.quantity,
@@ -57,6 +60,16 @@ export default function OrdersPage() {
   const orders = useMemo(() => isPreviewAuth
     ? readPreviewOrders().filter((order) => order.buyerEmail?.toLowerCase() === user?.email?.toLowerCase())
     : apiOrders, [user?.email, revision, apiOrders]);
+  const visibleOrders = useMemo(() => orders.filter((order) => {
+    const status = String(isPreviewAuth ? getPreviewBuyerOrderStatus(order) : order.status || "").toLowerCase();
+    const matchesStatus = statusFilter === "all"
+      || (statusFilter === "active" && !["completed", "cancelled", "refunded"].some((value) => status.includes(value)))
+      || (statusFilter === "completed" && (status.includes("completed") || status.includes("delivered")))
+      || (statusFilter === "cancelled" && (status.includes("cancelled") || status.includes("refunded")));
+    const query = orderSearch.trim().toLowerCase();
+    const matchesQuery = !query || `${order.id} ${(order.items || []).map(({ product }) => product?.name).join(" ")}`.toLowerCase().includes(query);
+    return matchesStatus && matchesQuery;
+  }), [orders, orderSearch, statusFilter]);
   const cancelOrder = (order) => {
     if (!window.confirm(`Cancel order ${order.id}?`)) return;
     if (!isPreviewAuth) {
@@ -80,6 +93,8 @@ export default function OrdersPage() {
           <Link to="/products" className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 transition hover:text-amber-700">Explore marketplace <ArrowRight size={15} /></Link>
         </div>
 
+        {!loading && orders.length > 0 && <div className="mt-6 grid gap-3 rounded-2xl border border-slate-200 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_220px] sm:p-4"><label className="relative"><span className="sr-only">Search orders</span><input type="search" value={orderSearch} onChange={(event) => setOrderSearch(event.target.value)} placeholder="Search order number or product" className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-amber-400 focus:bg-white" /></label><label className="sr-only" htmlFor="order-status-filter">Filter orders by status</label><select id="order-status-filter" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700"><option value="all">All orders</option><option value="active">Active</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></div>}
+
         {loading ? <section className="mt-7 rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">Loading your orders...</section> : orders.length === 0 ? (
           <section className="mt-7 rounded-2xl border border-slate-200/80 bg-white px-5 py-14 text-center sm:py-16">
             <span className="mx-auto grid h-16 w-16 place-items-center rounded-[22px] bg-amber-50 text-amber-700"><ShoppingBag size={25} /></span>
@@ -87,9 +102,9 @@ export default function OrdersPage() {
             <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">When you place a preview order, it will appear here with its items and meetup details.</p>
             <Link to="/products" className="mt-6 inline-flex h-11 items-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-bold text-white transition hover:bg-slate-800">Browse listings <ArrowRight size={15} /></Link>
           </section>
-        ) : (
+        ) : visibleOrders.length === 0 ? <section className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-12 text-center"><h2 className="font-semibold text-slate-900">No orders match</h2><p className="mt-2 text-sm text-slate-500">Try another search or choose a different status.</p><button type="button" onClick={() => { setOrderSearch(""); setStatusFilter("all"); }} className="mt-4 text-sm font-semibold text-amber-800">Clear search and filters</button></section> : (
           <ul className="mt-7 space-y-4">
-            {orders.map((order) => (
+            {visibleOrders.map((order) => (
               <li key={order.id} className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/70 px-4 py-4 sm:px-6">
                   <div><Link to={`/orders/${order.id}`} className="font-mono text-xs font-bold text-slate-900 transition hover:text-amber-700">{order.id} <span aria-hidden="true">→</span></Link><p className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500"><Clock3 size={12} />{new Date(order.createdAt).toLocaleString("en-ZM", { dateStyle: "medium", timeStyle: "short" })}</p></div>
@@ -100,7 +115,7 @@ export default function OrdersPage() {
                 </div>
                 <div className="grid gap-3 border-t border-slate-100 bg-white px-4 py-4 text-xs sm:grid-cols-2 sm:px-6">
                   <div className="flex items-start gap-2 text-slate-600"><MapPin size={14} className="mt-0.5 shrink-0 text-amber-700" /><span><span className="font-semibold text-slate-800">Meetup</span><br />{order.meetupLocation}{order.meetupNotes ? ` · ${order.meetupNotes}` : ""}</span></div>
-                  <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end"><span className="text-slate-500">{paymentLabels[order.paymentPreference] || "Payment preference saved"}</span><span className="font-bold text-slate-950">Total {formatMoney(order.total ?? order.subtotal)}</span><Link to={`/orders/${order.id}`} className="inline-flex items-center gap-1 rounded-lg bg-amber-100 px-3 py-2 text-xs font-bold text-amber-950 transition hover:bg-amber-200">Track order <ArrowRight size={13} /></Link></div>
+                  <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end"><span className="text-slate-500">{paymentLabels[order.paymentPreference] || "Payment preference saved"}{(order.paymentStatus || order.paymentDispute) && <span className="ml-2 inline-flex rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-700">{order.paymentStatus || `Dispute ${order.paymentDispute.status}`}</span>}</span><span className="font-bold text-slate-950">Total {formatMoney(order.total ?? order.subtotal)}</span><Link to={`/orders/${order.id}`} className="inline-flex items-center gap-1 rounded-lg bg-amber-100 px-3 py-2 text-xs font-bold text-amber-950 transition hover:bg-amber-200">Track order <ArrowRight size={13} /></Link></div>
                 </div>
               </li>
             ))}

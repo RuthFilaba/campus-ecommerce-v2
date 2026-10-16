@@ -26,6 +26,7 @@ function userFromRegistration(data) {
     full_name: `${data.first_name.trim()} ${data.last_name.trim()}`,
     phone: data.phone || '',
     role: data.role === 'seller' ? 'seller' : 'buyer',
+    ...(data.role === 'seller' ? { seller_status: 'pending', seller_status_reason: '' } : {}),
     terms_accepted: Boolean(data.terms_accepted),
     terms_accepted_at: data.terms_accepted ? new Date(now).toISOString() : null,
     is_preview: true,
@@ -49,6 +50,7 @@ export const login = async (email, password) => {
     last_name: '',
     full_name: fallbackName,
     role: normalizedEmail === 'admin@campusecom.zm' ? 'admin' : normalizedEmail === 'seller@campusecom.zm' ? 'seller' : 'buyer',
+    ...(normalizedEmail === 'seller@campusecom.zm' ? { seller_status: 'approved' } : {}),
     is_preview: true,
   }
   localStorage.setItem(SESSION_KEY, JSON.stringify(user))

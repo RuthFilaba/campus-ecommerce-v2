@@ -279,13 +279,13 @@ const ChatPage = () => {
                     Order #{selectedThread.order_id}
                   </span>
                   <span className="text-gray-500">{selectedThread.order_status || "Pending"}</span>
-                  <span className="text-gray-500">Total: ZMW {selectedThread.order_total}</span>
+                  <span className="text-gray-500">Total: K {selectedThread.order_total}</span>
                 </div>
               ) : hasProductContext ? (
                 <div className="flex items-center gap-2 text-xs mt-1 flex-wrap">
                   <img src={selectedThread.product_image} alt="" className="w-6 h-6 rounded object-cover" />
                   <span className="font-medium">{selectedThread.product_name}</span>
-                  <span className="text-gray-500">ZMW {selectedThread.product_price}</span>
+                  <span className="text-gray-500">K {selectedThread.product_price}</span>
                 </div>
               ) : null}
             </div>

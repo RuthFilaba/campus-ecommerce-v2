@@ -80,7 +80,7 @@ export default function ProductsPage() {
   const maximum = rawMaximum === Infinity ? Infinity : rawMaximum * priceMultiplier;
   const catalogue = useMemo(() => [
     ...previewProducts,
-    ...(isPreviewAuth ? readAllPreviewSellerProducts().filter((product) => product.is_active !== false) : []),
+    ...(isPreviewAuth ? readAllPreviewSellerProducts().filter((product) => product.is_active !== false && product.is_approved === true) : []),
   ], []);
   const categoryOptions = useMemo(() => readAdminPreviewCategories(categories).filter((item) => item.is_active !== false), []);
 

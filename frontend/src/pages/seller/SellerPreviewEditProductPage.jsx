@@ -18,8 +18,8 @@ export default function SellerPreviewEditProductPage() {
   const updateField = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
   const save = (event) => {
     event.preventDefault();
-    updatePreviewSellerProduct(user.email, product.id, { ...form, price: Number(form.price), stock: Number(form.stock) });
-    toast.success("Listing updated on this device");
+    updatePreviewSellerProduct(user.email, product.id, { ...form, price: Number(form.price), stock: Number(form.stock), approval_status: "pending", is_approved: false, is_active: false, approval_reason: "", is_submitted: true });
+    toast.success("Changes submitted for administrator review");
     navigate("/seller/products");
   };
 
@@ -32,7 +32,7 @@ export default function SellerPreviewEditProductPage() {
           <form onSubmit={save} className="mt-6 space-y-5">
             <label className="block"><span className="mb-2 block text-xs font-bold text-slate-700">Listing name</span><input name="name" value={form.name} onChange={updateField} maxLength={100} required className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" /></label>
             <label className="block"><span className="mb-2 block text-xs font-bold text-slate-700">Description</span><textarea name="description" value={form.description} onChange={updateField} rows={4} required className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm leading-6 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" /></label>
-            <div className="grid gap-4 sm:grid-cols-2"><label className="block"><span className="mb-2 block text-xs font-bold text-slate-700">Price (ZMW)</span><input name="price" type="number" min="1" step="0.01" value={form.price} onChange={updateField} required className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" /></label><label className="block"><span className="mb-2 block text-xs font-bold text-slate-700">Available stock</span><input name="stock" type="number" min="0" step="1" value={form.stock} onChange={updateField} required className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" /></label></div>
+            <div className="grid gap-4 sm:grid-cols-2"><label className="block"><span className="mb-2 block text-xs font-bold text-slate-700">Price (K)</span><input name="price" type="number" min="1" step="0.01" value={form.price} onChange={updateField} required className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" /></label><label className="block"><span className="mb-2 block text-xs font-bold text-slate-700">Available stock</span><input name="stock" type="number" min="0" step="1" value={form.stock} onChange={updateField} required className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" /></label></div>
             <div className="flex justify-end border-t border-slate-100 pt-5"><button type="submit" className="inline-flex h-11 items-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-bold text-white transition hover:bg-slate-800"><Save size={15} /> Save changes</button></div>
           </form>
         </div>

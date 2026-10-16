@@ -118,10 +118,10 @@ const CartItem = ({ item, onUpdateQuantity, onRemove, onMoveToWishlist }) => {
         {/* Mobile Price */}
         <div className="sm:hidden mt-2">
           <span className="text-lg font-bold text-amber-600 dark:text-amber-400">
-            ZMW {(price * quantity).toFixed(2)}
+            K {(price * quantity).toFixed(2)}
           </span>
           <span className="text-sm text-gray-500 ml-2">
-            ZMW {price.toFixed(2)} each
+            K {price.toFixed(2)} each
           </span>
         </div>
 
@@ -175,10 +175,10 @@ const CartItem = ({ item, onUpdateQuantity, onRemove, onMoveToWishlist }) => {
       {/* Desktop Price */}
       <div className="hidden sm:flex flex-col items-end justify-between">
         <span className="text-lg font-bold text-amber-600 dark:text-amber-400">
-          ZMW {(price * quantity).toFixed(2)}
+          K {(price * quantity).toFixed(2)}
         </span>
         <span className="text-sm text-gray-500">
-          ZMW {price.toFixed(2)} each
+          K {price.toFixed(2)} each
         </span>
       </div>
     </motion.div>
