@@ -4,6 +4,7 @@ import { useCart } from "../../contexts/CartContext";
 import { clearDirectCheckout } from "../../services/purchaseFlow";
 import PremiumBreadcrumb from "../../components/common/PremiumBreadcrumb";
 import { getProductPrimaryImage } from "../../utils/productImages";
+import { formatMoney } from "../../services/currency";
 
 export default function CartPage() {
   const { cart, updateQuantity, removeItem } = useCart();
@@ -41,7 +42,7 @@ export default function CartPage() {
                     <Link to={`/products/${product.id}`} className="h-[76px] w-[76px] shrink-0 overflow-hidden rounded-xl bg-slate-100"><img src={getProductPrimaryImage(product)} alt="" className="h-full w-full object-cover" /></Link>
                     <div className="min-w-0"><Link to={`/products/${product.id}`} className="line-clamp-2 text-sm font-semibold leading-5 text-slate-900 transition hover:text-amber-700">{product.name}</Link><p className="mt-1 text-xs text-slate-500">{product.seller_name}</p><p className="mt-1 text-[10px] font-medium text-slate-400">Meetup at {product.campus}</p></div>
                   </div>
-                  <div className="text-sm font-bold text-slate-900 sm:block">K{Number(product.price).toLocaleString("en-ZM")}</div>
+                  <div className="text-sm font-bold text-slate-900 sm:block">{formatMoney(product.price)}</div>
                   <div className="inline-flex h-9 w-fit items-center rounded-lg border border-slate-200 p-0.5">
                     <button type="button" aria-label={`Decrease quantity for ${product.name}`} disabled={quantity <= 1} onClick={() => updateQuantity(product.id, quantity - 1)} className="grid h-7 w-7 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100 disabled:opacity-35"><Minus size={13} /></button>
                     <span className="w-8 text-center text-xs font-bold text-slate-800" aria-live="polite">{quantity}</span>
@@ -55,9 +56,9 @@ export default function CartPage() {
 
           <aside className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6">
             <h2 className="text-base font-bold tracking-tight text-slate-900">Order summary</h2>
-            <div className="mt-5 space-y-3 text-sm"><div className="flex justify-between text-slate-500"><span>Items ({cart.count})</span><span className="font-semibold text-slate-800">K{Number(cart.total).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div><div className="flex justify-between text-slate-500"><span>Campus meetup</span><span className="font-semibold text-slate-800">Arrange with seller</span></div></div>
+            <div className="mt-5 space-y-3 text-sm"><div className="flex justify-between text-slate-500"><span>Items ({cart.count})</span><span className="font-semibold text-slate-800">{formatMoney(cart.total)}</span></div><div className="flex justify-between text-slate-500"><span>Campus meetup</span><span className="font-semibold text-slate-800">Arrange with seller</span></div></div>
             <div className="my-5 h-px bg-slate-100" />
-            <div className="flex items-end justify-between"><span className="text-sm font-semibold text-slate-700">Subtotal</span><span className="text-xl font-bold tracking-tight text-slate-950">K{Number(cart.total).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div>
+            <div className="flex items-end justify-between"><span className="text-sm font-semibold text-slate-700">Subtotal</span><span className="text-xl font-bold tracking-tight text-slate-950">{formatMoney(cart.total)}</span></div>
             <Link to="/checkout" onClick={clearDirectCheckout} className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 text-sm font-bold text-slate-950 transition hover:bg-amber-300">Continue to checkout <ArrowRight size={16} /></Link>
             <div className="mt-5 flex items-start gap-2.5 rounded-xl bg-emerald-50/80 p-3 text-[11px] leading-5 text-emerald-800"><ShieldCheck size={15} className="mt-0.5 shrink-0 text-emerald-700" /><span>Preview cart is saved on this device. No order or payment is placed.</span></div>
           </aside>

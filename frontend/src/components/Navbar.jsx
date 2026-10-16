@@ -33,6 +33,8 @@ const adminLinks = [
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/coupons", label: "Coupons", icon: Tag },
   { to: "/admin/reports", label: "Reports", icon: BarChart3 },
+  { to: "/admin/activity", label: "Activity", icon: ClipboardList },
+  { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export default function Navbar() {

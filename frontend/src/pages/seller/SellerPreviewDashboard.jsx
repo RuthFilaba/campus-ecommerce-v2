@@ -15,8 +15,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { readPreviewSellerOrders, readPreviewSellerProducts, readPreviewSellerSettings } from "../../services/previewSellerData";
 import { getProductPrimaryImage } from "../../utils/productImages";
-
-const formatMoney = (value) => `K${Number(value || 0).toLocaleString("en-ZM", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+import { formatMoney } from "../../services/currency";
 
 export default function SellerPreviewDashboard() {
   const { user } = useAuth();

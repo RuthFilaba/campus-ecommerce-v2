@@ -45,6 +45,8 @@ const CreateProductPage = () => {
   const [uploadingImages, setUploadingImages] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
+    brand: "",
+    specifications: "",
     description: "",
     price: "",
     category: "other",
@@ -129,6 +131,8 @@ const CreateProductPage = () => {
     try {
       const productData = {
         name: formData.name,
+        brand: formData.brand.trim(),
+        specifications: formData.specifications.split("\n").map((value) => value.trim()).filter(Boolean),
         description: formData.description,
         price: parseFloat(formData.price),
         category: formData.category,
@@ -291,6 +295,11 @@ const CreateProductPage = () => {
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700"
                 required
               />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Brand (optional)<input type="text" name="brand" value={formData.brand} onChange={handleChange} maxLength={80} placeholder="e.g. Apple" className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-gray-700 dark:bg-gray-700" /></label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Specifications (optional)<textarea name="specifications" value={formData.specifications} onChange={handleChange} rows={2} placeholder="One detail per line, e.g. 256 GB storage" className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-gray-700 dark:bg-gray-700" /><span className="mt-1 block text-xs font-normal text-gray-500">Add key product details on separate lines.</span></label>
             </div>
 
             {/* Price and Stock */}

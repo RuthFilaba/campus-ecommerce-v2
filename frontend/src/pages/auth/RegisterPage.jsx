@@ -27,6 +27,7 @@ const registerSchema = z.object({
   role: z.enum(["buyer", "seller"]),
   password: z.string().min(8, "Password must be at least 8 characters"),
   password2: z.string().min(1, "Please confirm your password"),
+  termsAccepted: z.boolean().refine((accepted) => accepted, "Accept the Terms and Privacy Policy to continue"),
 }).refine((data) => data.password === data.password2, {
   message: "Passwords don't match",
   path: ["password2"],
@@ -57,6 +58,7 @@ const RegisterPage = () => {
       phone: "",
       password: "",
       password2: "",
+      termsAccepted: false,
     },
   })
 
@@ -73,6 +75,7 @@ const RegisterPage = () => {
       last_name: data.last_name,
       phone: data.phone || "",
       role: data.role,
+      terms_accepted: data.termsAccepted,
     }
     
     const success = await createAccount(payload)
@@ -209,6 +212,14 @@ const RegisterPage = () => {
               error={errors.password2?.message}
               {...register("password2")}
             />
+
+            <div>
+              <label className="flex items-start gap-2.5 text-xs leading-5 text-slate-600">
+                <input type="checkbox" className="mt-1 h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500" {...register("termsAccepted")} />
+                <span>I agree to the <Link to="/terms" className="font-semibold text-amber-700 underline">Terms and Conditions</Link> and acknowledge the <Link to="/privacy" className="font-semibold text-amber-700 underline">Privacy Policy</Link>.</span>
+              </label>
+              {errors.termsAccepted?.message && <p role="alert" className="mt-1 text-xs text-rose-600">{errors.termsAccepted.message}</p>}
+            </div>
 
             <button
               type="submit"

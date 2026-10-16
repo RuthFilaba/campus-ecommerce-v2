@@ -5,6 +5,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { readPreviewSellerOrders, updatePreviewSellerOrderStatus } from "../../services/previewSellerData";
 import { getProductPrimaryImage } from "../../utils/productImages";
 import toast from "react-hot-toast";
+import { formatMoney } from "../../services/currency";
 
 export default function SellerPreviewActivityPage({ kind }) {
   const { user } = useAuth();
@@ -33,7 +34,7 @@ export default function SellerPreviewActivityPage({ kind }) {
         <p className="text-[10px] font-bold uppercase tracking-[.16em] text-amber-700">Seller workspace</p>
         <div className="mt-1 flex flex-wrap items-end justify-between gap-4">
           <div><h1 className="text-3xl font-semibold tracking-[-.05em] text-slate-950">{title}</h1><p className="mt-2 text-sm text-slate-500">{isOrders ? "Review and manage buyer orders." : "Track completed sales and store performance."}</p></div>
-          {!isOrders && <div className="rounded-xl border border-slate-200 bg-white px-4 py-3"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Preview revenue</p><p className="mt-1 text-lg font-bold text-slate-950">K{revenue.toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</p></div>}
+          {!isOrders && <div className="rounded-xl border border-slate-200 bg-white px-4 py-3"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Preview revenue</p><p className="mt-1 text-lg font-bold text-slate-950">{formatMoney(revenue)}</p></div>}
         </div>
 
         {visibleOrders.length ? (
@@ -48,11 +49,11 @@ export default function SellerPreviewActivityPage({ kind }) {
                   {order.items.map(({ product, quantity }, index) => (
                     <li key={`${order.id}-${product.id}-${index}`} className="flex items-center justify-between gap-3 py-3">
                       <div className="flex min-w-0 items-center gap-3"><img src={getProductPrimaryImage(product)} alt="" className="h-10 w-10 shrink-0 rounded-lg bg-slate-100 object-cover" /><div className="min-w-0"><p className="truncate text-xs font-semibold text-slate-800">{product.name}</p><p className="mt-1 text-[10px] text-slate-500">Quantity {quantity}</p></div></div>
-                      <span className="shrink-0 text-xs font-bold text-slate-900">K{(Number(product.price) * quantity).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span>
+                      <span className="shrink-0 text-xs font-bold text-slate-900">{formatMoney(Number(product.price) * quantity)}</span>
                     </li>
                   ))}
                 </ul>
-                <div className="mt-3 flex flex-wrap justify-between gap-2 text-xs"><span className="text-slate-500">Meetup: {order.meetupLocation}</span><span className="font-bold text-slate-900">{isOrders ? "Order total" : "Sale total"} K{Number(order.sellerSubtotal).toLocaleString("en-ZM", { minimumFractionDigits: 2 })}</span></div>
+                <div className="mt-3 flex flex-wrap justify-between gap-2 text-xs"><span className="text-slate-500">Meetup: {order.meetupLocation}</span><span className="font-bold text-slate-900">{isOrders ? "Order total" : "Sale total"} {formatMoney(order.sellerSubtotal)}</span></div>
                 {isOrders && order.status !== "Completed" && order.status !== "Cancelled" && <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-3">{order.status.toLowerCase().includes("pending") && <button type="button" onClick={() => setOrderStatus(order, "Confirmed")} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-950 px-3 text-xs font-semibold text-white transition hover:bg-slate-800"><Check size={14} /> Confirm order</button>}<button type="button" onClick={() => setOrderStatus(order, "Completed")} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-emerald-200 px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-50"><Check size={14} /> Mark completed</button><button type="button" onClick={() => setOrderStatus(order, "Cancelled")} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-rose-200 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-50"><X size={14} /> Cancel</button></div>}
               </article>
             ))}

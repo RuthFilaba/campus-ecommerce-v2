@@ -26,6 +26,8 @@ function userFromRegistration(data) {
     full_name: `${data.first_name.trim()} ${data.last_name.trim()}`,
     phone: data.phone || '',
     role: data.role === 'seller' ? 'seller' : 'buyer',
+    terms_accepted: Boolean(data.terms_accepted),
+    terms_accepted_at: data.terms_accepted ? new Date(now).toISOString() : null,
     is_preview: true,
   }
 }

@@ -12,6 +12,7 @@ import { isPreviewAuth } from "../services/auth";
 import { readAllPreviewSellerProducts } from "../services/previewSellerData";
 import { getProductImages } from "../utils/productImages";
 import { canReviewPreviewProduct, createPreviewReview, readPreviewReviews } from "../services/previewReviews";
+import { formatMoney } from "../services/currency";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -107,6 +108,11 @@ export default function ProductDetailPage() {
   const buyerCanReview = user?.role === "buyer" && canReviewPreviewProduct(product.id, user.email);
   const alreadyReviewed = reviews.some((review) => review.buyerEmail === user?.email?.toLowerCase());
   const averageRating = reviews.length ? reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length : Number(product.rating || 0);
+  const productSpecifications = Array.isArray(product.specifications)
+    ? product.specifications.map((value) => typeof value === "string" ? value : `${value.label || value.name}: ${value.value ?? ""}`)
+    : product.specifications && typeof product.specifications === "object"
+      ? Object.entries(product.specifications).map(([label, value]) => `${label}: ${value}`)
+      : String(product.specifications || "").split("\n").map((value) => value.trim()).filter(Boolean);
 
   return (
     <div className="min-h-screen bg-[#fafaf9] pb-16">
@@ -130,13 +136,15 @@ export default function ProductDetailPage() {
           <div className="flex flex-col">
             <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.12em] text-amber-700"><span className="rounded-full bg-amber-50 px-2.5 py-1">{getCategoryLabel(product.category)}</span><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">{product.stock > 0 ? "Available" : "Sold"}</span></div>
             <h1 className="mt-4 text-3xl font-semibold leading-tight tracking-[-.05em] text-slate-950 sm:text-[38px]">{product.name}</h1>
-            <p className="mt-4 text-[28px] font-bold tracking-[-.045em] text-slate-950">K{Number(product.price).toLocaleString("en-ZM")}</p>
+            <p className="mt-4 text-[28px] font-bold tracking-[-.045em] text-slate-950">{formatMoney(product.price)}</p>
             <div className="mt-5 h-px bg-slate-200" />
 
             <div className="mt-5">
               <h2 className="text-sm font-bold text-slate-900">About this item</h2>
               <p className="mt-2 text-sm leading-7 text-slate-600">{product.description}</p>
             </div>
+
+            {(product.brand || productSpecifications.length > 0) && <section className="mt-5 rounded-xl border border-slate-200/80 bg-white p-4" aria-label="Product specifications"><h2 className="text-sm font-bold text-slate-900">Specifications</h2>{product.brand && <p className="mt-3 text-sm text-slate-600"><span className="font-semibold text-slate-800">Brand:</span> {product.brand}</p>}{productSpecifications.length > 0 && <ul className="mt-2 space-y-1.5 text-sm text-slate-600">{productSpecifications.map((specification, index) => <li key={`${product.id}-spec-${index}`} className="flex gap-2"><span className="text-amber-600" aria-hidden="true">•</span>{specification}</li>)}</ul>}</section>}
 
             <div className="mt-5 grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-slate-200/80 bg-white p-3.5"><span className="block text-[10px] font-bold uppercase tracking-[.1em] text-slate-400">Condition</span><span className="mt-1 block text-sm font-semibold text-slate-800">{getConditionLabel(product.condition)}</span></div>
@@ -178,7 +186,7 @@ export default function ProductDetailPage() {
           <section className="mt-14 border-t border-slate-200 pt-9" aria-labelledby="related-title">
             <div className="flex items-end justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[.14em] text-amber-700">Keep exploring</p><h2 id="related-title" className="mt-1.5 text-xl font-semibold tracking-tight text-slate-950">More in {getCategoryLabel(product.category)}</h2></div><Link to={`/products?category=${product.category}`} className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 transition hover:text-amber-700">See all <ArrowRight size={14} /></Link></div>
             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-              {related.map((item) => <Link key={item.id} to={`/products/${item.id}`} className="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white transition hover:-translate-y-0.5 hover:shadow-lg"><div className="aspect-[1.5/1] overflow-hidden bg-slate-100"><img src={getProductImages(item)[0]} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /></div><div className="p-3.5"><p className="line-clamp-1 text-xs font-semibold text-slate-800">{item.name}</p><p className="mt-1.5 text-sm font-bold text-slate-950">K{Number(item.price).toLocaleString("en-ZM")}</p></div></Link>)}
+              {related.map((item) => <Link key={item.id} to={`/products/${item.id}`} className="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white transition hover:-translate-y-0.5 hover:shadow-lg"><div className="aspect-[1.5/1] overflow-hidden bg-slate-100"><img src={getProductImages(item)[0]} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /></div><div className="p-3.5"><p className="line-clamp-1 text-xs font-semibold text-slate-800">{item.name}</p><p className="mt-1.5 text-sm font-bold text-slate-950">{formatMoney(item.price)}</p></div></Link>)}
             </div>
           </section>
         )}

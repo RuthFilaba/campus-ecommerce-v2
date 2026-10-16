@@ -6,6 +6,7 @@ import { useAuth } from "../../contexts/AuthContext"
 import api from "../../services/api"
 import toast from "react-hot-toast"
 import { getProductImages } from "../../utils/productImages"
+import { formatMoney } from "../../services/currency"
 
 const ProductCard = ({ product, onAddToCart, onAddToWishlist, onEdit, onDelete, isOwner = false, showManagement = false }) => {
   const { user, isAuthenticated } = useAuth()
@@ -203,7 +204,7 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onEdit, onDelete, 
         
         {/* Price and Actions */}
         <div className="flex items-center justify-between mt-3">
-          <span className="text-xl font-bold text-amber-600">K{price.toFixed(2)}</span>
+          <span className="text-xl font-bold text-amber-600">{formatMoney(price)}</span>
           
           {shouldShowManagement ? (
             // Management buttons for product owners (sellers)

@@ -60,6 +60,7 @@ export default function Footer() {
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-400/10 text-amber-300"><GraduationCap size={19} /></span>
               <p className="text-xs leading-5 text-slate-400">{isAdmin ? "Support a safe, reliable campus marketplace through clear oversight." : isSeller ? "Build trust with clear listings, timely updates, and convenient campus meetups." : "Discover useful finds and connect with fellow students around campus."}</p>
             </div>
+            <ul className="mt-4 space-y-2 text-sm text-slate-400"><li><Link to="/help" className="transition hover:text-white">Help center & FAQ</Link></li><li><Link to="/terms" className="transition hover:text-white">Terms and conditions</Link></li><li><Link to="/privacy" className="transition hover:text-white">Privacy policy</Link></li></ul>
           </div>
         </div>
 

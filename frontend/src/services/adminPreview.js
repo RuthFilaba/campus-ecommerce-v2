@@ -4,6 +4,8 @@ import { readPreviewOrders } from "./previewOrders";
 const USERS_KEY = "campusecom.previewUsers.v1";
 const COUPONS_KEY = "campusecom.adminCoupons.v1";
 const CATEGORIES_KEY = "campusecom.adminCategories.v1";
+const AUDIT_KEY = "campusecom.adminAudit.v1";
+const TAX_RATE_KEY = "campusecom.previewTaxRate.v1";
 
 const demoUsers = [
   { id: "demo-buyer", email: "buyer@campusecom.zm", first_name: "Preview", last_name: "Buyer", role: "buyer", is_active: true },
@@ -27,6 +29,27 @@ function readArray(key, fallback = []) {
 
 function writeArray(key, value) {
   window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+export function readAdminPreviewAudit() {
+  return readArray(AUDIT_KEY).slice(0, 200);
+}
+
+export function recordAdminPreviewAudit(action, target, actor = "Preview administrator") {
+  const records = readAdminPreviewAudit();
+  writeArray(AUDIT_KEY, [{ id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, createdAt: new Date().toISOString(), actor, action, target }, ...records].slice(0, 200));
+}
+
+export function readAdminPreviewTaxRate() {
+  const rate = Number(window.localStorage.getItem(TAX_RATE_KEY));
+  return Number.isFinite(rate) && rate >= 0 && rate <= 100 ? rate : 0;
+}
+
+export function writeAdminPreviewTaxRate(rate) {
+  const value = Number(rate);
+  if (!Number.isFinite(value) || value < 0 || value > 100) return false;
+  window.localStorage.setItem(TAX_RATE_KEY, String(value));
+  return true;
 }
 
 export function readAdminPreviewUsers() {

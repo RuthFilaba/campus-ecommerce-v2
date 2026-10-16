@@ -11,7 +11,10 @@ const ProductsPage = lazy(() => import("../pages/ProductsPage"));
 const ProductDetailPage = lazy(() => import("../pages/ProductDetailPage"));
 const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
 const RegisterPage = lazy(() => import("../pages/auth/RegisterPage"));
+const ForgotPasswordPage = lazy(() => import("../pages/auth/ForgotPasswordPage"));
 const PublicProfilePage = lazy(() => import("../pages/PublicProfilePage"));
+const HelpCenterPage = lazy(() => import("../pages/HelpCenterPage"));
+const PolicyPage = lazy(() => import("../pages/PolicyPage"));
 
 // Protected Pages
 const ProfilePage = lazy(() => import("../pages/ProfilePage"));
@@ -56,6 +59,10 @@ const AppRoutes = () => {
             <Route path="/profile/:userId" element={<PublicProfilePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/help" element={<HelpCenterPage />} />
+            <Route path="/terms" element={<PolicyPage />} />
+            <Route path="/privacy" element={<PolicyPage />} />
 
             <Route path="/profile" element={isAuthenticated ? <ProfilePage /> : <Navigate to="/login" />} />
             <Route path="/cart" element={isBuyer ? <CartPage /> : <Navigate to={buyerRedirect} state={{ from: { pathname: "/cart" } }} replace />} />
@@ -73,6 +80,8 @@ const AppRoutes = () => {
             <Route path="/admin/customers" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
             <Route path="/admin/coupons" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
             <Route path="/admin/reports" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
+            <Route path="/admin/activity" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
+            <Route path="/admin/settings" element={isAuthenticated && isAdmin ? <AdminDashboardPage /> : <Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
 
             <Route path="/seller/dashboard" element={isAuthenticated && isSeller ? <SellerDashboardPage /> : <Navigate to="/" />} />
             <Route path="/seller/products" element={isAuthenticated && isSeller ? <ManageProductsPage /> : <Navigate to="/" />} />

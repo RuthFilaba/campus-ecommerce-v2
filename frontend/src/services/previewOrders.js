@@ -32,6 +32,8 @@ export function createPreviewOrder(cart, details) {
     itemCount: cart.count,
     subtotal: cart.total,
     discount: Number(details.discount) || 0,
+    taxRate: Number(details.taxRate) || 0,
+    taxAmount: Number(details.taxAmount) || 0,
     total: Number.isFinite(Number(details.total)) ? Number(details.total) : cart.total,
     couponCode: details.couponCode || "",
     meetupLocation: details.meetupLocation,
@@ -46,10 +48,35 @@ export function createPreviewOrder(cart, details) {
 
 export function updatePreviewOrderStatus(orderId, status) {
   const orders = readPreviewOrders();
+  const target = orders.find((order) => String(order.id) === String(orderId));
+  if (!target) return { error: "Order not found." };
+  if (String(status).toLowerCase() === "refunded") {
+    const deliveredAt = target.deliveredAt ? new Date(target.deliveredAt).getTime() : 0;
+    const withinRefundWindow = deliveredAt > 0 && Date.now() - deliveredAt <= 14 * 24 * 60 * 60 * 1000;
+    if (!String(target.status).toLowerCase().includes("deliver") && !String(target.status).toLowerCase().includes("complete")) {
+      return { error: "Only delivered orders can be refunded." };
+    }
+    if (!withinRefundWindow) return { error: "The 14-day refund window has expired or delivery date is missing." };
+  }
   const updated = orders.map((order) => String(order.id) === String(orderId)
-    ? { ...order, status, sellerStatuses: {} }
+    ? { ...order, status, sellerStatuses: {}, ...(String(status).toLowerCase() === "delivered" ? { deliveredAt: new Date().toISOString() } : {}) }
     : order);
-  if (!orders.some((order) => String(order.id) === String(orderId))) return false;
   window.localStorage.setItem(ORDERS_KEY, JSON.stringify(updated));
-  return true;
+  return { order: updated.find((order) => String(order.id) === String(orderId)) };
+}
+
+export function cancelPreviewOrder(orderId, buyerEmail) {
+  const orders = readPreviewOrders();
+  const order = orders.find((item) => String(item.id) === String(orderId));
+  if (!order || order.buyerEmail?.toLowerCase() !== String(buyerEmail || "").toLowerCase()) {
+    return { error: "Order not found for this account." };
+  }
+  if (!getPreviewBuyerOrderStatus(order).toLowerCase().includes("pending")) {
+    return { error: "Only orders awaiting seller confirmation can be cancelled." };
+  }
+  const updated = orders.map((item) => String(item.id) === String(orderId)
+    ? { ...item, status: "Cancelled", cancelledAt: new Date().toISOString() }
+    : item);
+  window.localStorage.setItem(ORDERS_KEY, JSON.stringify(updated));
+  return { order: updated.find((item) => String(item.id) === String(orderId)) };
 }

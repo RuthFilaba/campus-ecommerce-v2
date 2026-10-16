@@ -6,6 +6,7 @@ import { readPreviewWishlist, writePreviewWishlist } from "../../services/previe
 import PremiumBreadcrumb from "../../components/common/PremiumBreadcrumb";
 import { readAllPreviewSellerProducts } from "../../services/previewSellerData";
 import { getProductPrimaryImage } from "../../utils/productImages";
+import { formatMoney } from "../../services/currency";
 
 export default function WishlistPage() {
   const [savedIds, setSavedIds] = useState(() => readPreviewWishlist());
@@ -29,7 +30,7 @@ export default function WishlistPage() {
             {savedProducts.map((product) => (
               <article key={product.id} className="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white transition hover:-translate-y-1 hover:shadow-[0_18px_42px_rgba(15,23,42,.08)]">
                 <Link to={`/products/${product.id}`} className="block"><div className="relative aspect-[1.12/1] overflow-hidden bg-slate-100"><img src={getProductPrimaryImage(product)} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" /><span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold text-slate-700">{getConditionLabel(product.condition)}</span></div></Link>
-                <div className="p-4"><p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">{getCategoryLabel(product.category)}</p><Link to={`/products/${product.id}`} className="mt-1.5 block min-h-10 text-sm font-semibold leading-5 text-slate-900 hover:text-amber-700">{product.name}</Link><div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3"><span className="text-base font-bold text-slate-950">K{Number(product.price).toLocaleString("en-ZM")}</span><button type="button" onClick={() => removeSaved(product.id)} aria-label={`Remove ${product.name} from wishlist`} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"><Trash2 size={15} /></button></div></div>
+                <div className="p-4"><p className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">{getCategoryLabel(product.category)}</p><Link to={`/products/${product.id}`} className="mt-1.5 block min-h-10 text-sm font-semibold leading-5 text-slate-900 hover:text-amber-700">{product.name}</Link><div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3"><span className="text-base font-bold text-slate-950">{formatMoney(product.price)}</span><button type="button" onClick={() => removeSaved(product.id)} aria-label={`Remove ${product.name} from wishlist`} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"><Trash2 size={15} /></button></div></div>
               </article>
             ))}
           </div>

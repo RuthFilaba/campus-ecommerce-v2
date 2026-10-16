@@ -8,6 +8,7 @@ import { readAllPreviewSellerProducts } from "../services/previewSellerData";
 import { getProductPrimaryImage } from "../utils/productImages";
 import { readAdminPreviewCategories } from "../services/adminPreview";
 import { readPreviewReviews } from "../services/previewReviews";
+import { formatMoney, readPreferredCurrency, readZmwPerUsdRate } from "../services/currency";
 
 const conditions = [
   { id: "new", label: "New" },
@@ -50,7 +51,7 @@ function PreviewProductCard({ product }) {
           <h2 className="mt-1.5 min-h-11 text-sm font-semibold leading-5 tracking-[-.015em] text-slate-900 sm:text-[15px]">{product.name}</h2>
           {rating > 0 && <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600"><Star size={12} className="fill-amber-400 text-amber-500" /> {rating.toFixed(1)} <span className="font-normal text-slate-400">({reviewCount})</span></p>}
           <div className="mt-4 flex items-end justify-between gap-3 border-t border-slate-100 pt-3.5">
-            <span className="text-lg font-bold tracking-[-.035em] text-slate-950">K{Number(product.price).toLocaleString("en-ZM")}</span>
+            <span className="text-lg font-bold tracking-[-.035em] text-slate-950">{formatMoney(product.price)}</span>
             <span className="max-w-[48%] truncate text-right text-[11px] font-medium text-slate-500">{product.seller_name}</span>
           </div>
         </div>
@@ -73,8 +74,10 @@ export default function ProductsPage() {
   const availability = searchParams.get("availability") || "";
   const minimumRating = Number(searchParams.get("min_rating")) || 0;
   const brand = searchParams.get("brand") || "";
-  const minimum = Number(searchParams.get("min_price")) || 0;
-  const maximum = Number(searchParams.get("max_price")) || Infinity;
+  const priceMultiplier = readPreferredCurrency() === "USD" && readZmwPerUsdRate() > 0 ? readZmwPerUsdRate() : 1;
+  const minimum = (Number(searchParams.get("min_price")) || 0) * priceMultiplier;
+  const rawMaximum = Number(searchParams.get("max_price")) || Infinity;
+  const maximum = rawMaximum === Infinity ? Infinity : rawMaximum * priceMultiplier;
   const catalogue = useMemo(() => [
     ...previewProducts,
     ...(isPreviewAuth ? readAllPreviewSellerProducts().filter((product) => product.is_active !== false) : []),
@@ -188,7 +191,7 @@ export default function ProductsPage() {
               </fieldset>
               <label className="block text-xs font-bold text-slate-700">Brand<input value={brand} onChange={(event) => updateParams({ brand: event.target.value })} placeholder="Any brand" className="mt-2 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" /></label>
               <fieldset>
-                <legend className="mb-2 text-xs font-bold text-slate-700">Price range · ZMW</legend>
+                <legend className="mb-2 text-xs font-bold text-slate-700">Price range · {readPreferredCurrency()}</legend>
                 <div className="flex items-center gap-2">
                   <label className="sr-only" htmlFor="price-min">Minimum price</label><input id="price-min" inputMode="numeric" type="number" min="0" value={minimumInput} onChange={(event) => setMinimumInput(event.target.value)} placeholder="Min" className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" />
                   <span className="text-slate-300">—</span>

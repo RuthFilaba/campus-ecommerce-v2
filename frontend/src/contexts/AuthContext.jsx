@@ -26,6 +26,30 @@ export const AuthProvider = ({ children }) => {
   }, [])
 
   useEffect(() => {
+    if (!user) return undefined
+    const timeoutMs = 30 * 60 * 1000
+    let timeoutId
+    const expireSession = () => {
+      clearPreviewSession()
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+      setUser(null)
+      toast('You were signed out after 30 minutes of inactivity.')
+    }
+    const resetTimeout = () => {
+      window.clearTimeout(timeoutId)
+      timeoutId = window.setTimeout(expireSession, timeoutMs)
+    }
+    const activityEvents = ['pointerdown', 'keydown', 'touchstart', 'scroll']
+    activityEvents.forEach((eventName) => window.addEventListener(eventName, resetTimeout, { passive: true }))
+    resetTimeout()
+    return () => {
+      window.clearTimeout(timeoutId)
+      activityEvents.forEach((eventName) => window.removeEventListener(eventName, resetTimeout))
+    }
+  }, [user?.id])
+
+  useEffect(() => {
     const syncSession = (event) => {
       if (event.key && !['access_token', 'refresh_token', 'campusecom.previewSession.v1'].includes(event.key)) return
       if (!localStorage.getItem('access_token') && !localStorage.getItem('campusecom.previewSession.v1')) {
