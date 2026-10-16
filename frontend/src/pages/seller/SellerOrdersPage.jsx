@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
 import toast from "react-hot-toast";
+import OrderTrackingTimeline from "../../components/order/OrderTrackingTimeline";
 
 export default function SellerOrdersPage() {
   const [activeTab, setActiveTab] = useState("pending");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
+  const [trackingNotes, setTrackingNotes] = useState({});
 
   useEffect(() => {
     fetchOrders();
@@ -26,10 +28,11 @@ export default function SellerOrdersPage() {
     }
   };
 
-  const updateStatus = async (orderId, newStatus) => {
+  const updateStatus = async (orderId, newStatus, notes = "") => {
     setUpdating(orderId);
     try {
-      await api.post(`/orders/${orderId}/status/`, { status: newStatus });
+      await api.post(`/orders/${orderId}/status/`, { status: newStatus, notes });
+      setTrackingNotes((current) => ({ ...current, [orderId]: "" }));
       toast.success(`Order ${newStatus}`);
       fetchOrders();
     } catch (err) {
@@ -119,31 +122,21 @@ export default function SellerOrdersPage() {
                   <div className="mt-4 space-y-2">
                     {order.status === "pending" && (
                       <button
-                        onClick={() => updateStatus(order.id, "processing")}
+                        onClick={() => updateStatus(order.id, "processing", trackingNotes[order.id] || "")}
                         disabled={updating === order.id}
                         className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
                       >
-                        {updating === order.id ? "Updating..." : "? Confirm Order"}
+                        {updating === order.id ? "Updating..." : "Confirm and start preparation"}
                       </button>
                     )}
                     
                     {order.status === "processing" && (
                       <button
-                        onClick={() => updateStatus(order.id, "ready")}
+                        onClick={() => updateStatus(order.id, "ready", trackingNotes[order.id] || "")}
                         disabled={updating === order.id}
                         className="w-full bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 disabled:opacity-50"
                       >
-                        {updating === order.id ? "Updating..." : "?? Mark Ready for Pickup"}
-                      </button>
-                    )}
-                    
-                    {order.status === "ready" && (
-                      <button
-                        onClick={() => updateStatus(order.id, "completed")}
-                        disabled={updating === order.id}
-                        className="w-full bg-amber-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-amber-700 disabled:opacity-50"
-                      >
-                        {updating === order.id ? "Updating..." : "?? Confirm Payment"}
+                        {updating === order.id ? "Updating..." : "Mark ready for pickup"}
                       </button>
                     )}
                     
@@ -155,12 +148,14 @@ export default function SellerOrdersPage() {
                         disabled={updating === order.id}
                         className="w-full bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 disabled:opacity-50"
                       >
-                        ? Cancel Order
+                        Cancel order
                       </button>
                     )}
                   </div>
                 </div>
               </div>
+              {!['ready', 'completed', 'cancelled'].includes(order.status) && <label className="mt-4 block text-xs font-semibold text-slate-700">Message for buyer <span className="font-normal text-slate-500">(shared with your next status update)</span><textarea rows={2} value={trackingNotes[order.id] || ""} onChange={(event) => setTrackingNotes((current) => ({ ...current, [order.id]: event.target.value }))} placeholder="For example: I am preparing your item for pickup." className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-normal outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100" /></label>}
+              <div className="mt-4"><OrderTrackingTimeline status={order.status} meetupLocation={order.meetup_location || ""} compact /></div>
             </div>
           ))
         )}

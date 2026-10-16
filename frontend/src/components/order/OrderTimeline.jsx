@@ -11,7 +11,7 @@ import {
   faHandshake
 } from "@fortawesome/free-solid-svg-icons";
 
-const OrderTimeline = ({ order, payment }) => {
+const OrderTimeline = ({ order, payment, history = [] }) => {
   const steps = [
     {
       key: "order_placed",
@@ -180,6 +180,20 @@ const OrderTimeline = ({ order, payment }) => {
           </div>
         </div>
       </div>
+
+      {history.length > 0 && (
+        <div className="mt-6 border-t border-gray-200 pt-5 dark:border-gray-700">
+          <h4 className="text-sm font-semibold">Seller and buyer updates</h4>
+          <ol className="mt-3 space-y-3">
+            {[...history].sort((first, second) => new Date(second.created_at || second.at || 0) - new Date(first.created_at || first.at || 0)).map((entry, index) => (
+              <li key={`${entry.created_at || entry.at || index}-${index}`} className="flex gap-3 text-xs">
+                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-amber-500" />
+                <div className="min-w-0"><p className="font-semibold text-gray-800 dark:text-gray-200">{entry.new_status || entry.status}</p>{entry.notes && <p className="mt-0.5 leading-5 text-gray-600 dark:text-gray-400">{entry.notes}</p>}<p className="mt-0.5 text-gray-400">{entry.created_at || entry.at ? new Date(entry.created_at || entry.at).toLocaleString() : "Just updated"}{entry.changed_by_name ? ` - ${entry.changed_by_name}` : ""}</p></div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
     </div>
   );
 };

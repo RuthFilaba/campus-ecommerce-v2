@@ -21,12 +21,15 @@ import toast from "react-hot-toast";
 import { getPreviewBuyerOrderStatus, readPreviewOrders } from "../../services/previewOrders";
 import PremiumBreadcrumb from "../../components/common/PremiumBreadcrumb";
 import { formatMoney } from "../../services/currency";
+import OrderTrackingTimeline from "../../components/order/OrderTrackingTimeline";
+import { groupPreviewOrderItems } from "../../services/orderTracking";
 
 const OrderDetailPage = () => {
   const { id } = useParams();
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
+  const [orderHistory, setOrderHistory] = useState([]);
   const [payment, setPayment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -40,6 +43,18 @@ const OrderDetailPage = () => {
     fetchOrderDetails();
   }, [id]);
 
+  useEffect(() => {
+    const refreshPreviewOrder = () => {
+      if (id && readPreviewOrders().some((item) => item.id === id)) fetchOrderDetails();
+    };
+    window.addEventListener("campusecom:preview-orders-change", refreshPreviewOrder);
+    window.addEventListener("storage", refreshPreviewOrder);
+    return () => {
+      window.removeEventListener("campusecom:preview-orders-change", refreshPreviewOrder);
+      window.removeEventListener("storage", refreshPreviewOrder);
+    };
+  }, [id, user?.email]);
+
   const fetchOrderDetails = async () => {
     setLoading(true);
     const previewOrder = readPreviewOrders().find((item) => item.id === id);
@@ -51,6 +66,7 @@ const OrderDetailPage = () => {
         return;
       }
       setOrder({ ...previewOrder, isPreview: true });
+      setOrderHistory(Object.values(previewOrder.sellerTracking || {}).flatMap((tracking) => tracking.events || []));
       setLoading(false);
       return;
     }
@@ -58,6 +74,13 @@ const OrderDetailPage = () => {
       const response = await api.get(`/orders/${id}/`);
       console.log("Order details:", response.data);
       setOrder(response.data);
+      try {
+        const historyResponse = await api.get(`/orders/${id}/history/`);
+        const historyData = historyResponse.data.results || historyResponse.data;
+        setOrderHistory(Array.isArray(historyData) ? historyData : []);
+      } catch {
+        setOrderHistory([]);
+      }
       
       if (response.data.payment) {
         setPayment(response.data.payment);
@@ -86,7 +109,7 @@ const OrderDetailPage = () => {
     
     setMarkingReady(true);
     try {
-      await api.post(`/orders/${order.id}/update-status/`, {
+      await api.post(`/orders/${order.id}/status/`, {
         status: "ready",
         notes: "Item is ready for pickup at the arranged location"
       });
@@ -117,6 +140,7 @@ const OrderDetailPage = () => {
   if (!order) return null;
 
   if (order.isPreview) {
+    const sellerGroups = groupPreviewOrderItems(order);
     const paymentLabels = {
       "meetup-cash": "Cash at meetup",
       "mtn-momo": "MTN Mobile Money",
@@ -132,7 +156,8 @@ const OrderDetailPage = () => {
             <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-5"><div><p className="text-[10px] font-bold uppercase tracking-[.15em] text-amber-700">Preview order</p><h1 className="mt-1 font-mono text-xl font-bold text-slate-950">{order.id}</h1><p className="mt-2 text-xs text-slate-500">Placed {new Date(order.createdAt).toLocaleString("en-ZM", { dateStyle: "medium", timeStyle: "short" })}</p></div><span className="rounded-full bg-amber-50 px-3 py-1.5 text-[11px] font-bold text-amber-800">{getPreviewBuyerOrderStatus(order)}</span></div>
             <h2 className="mt-5 text-sm font-bold text-slate-900">Items</h2>
             <ul className="mt-2 divide-y divide-slate-100">{order.items.map(({ product, quantity }, index) => <li key={`${product.id}-${index}`} className="flex items-center gap-3 py-4"><img src={getProductPrimaryImage(product)} alt="" className="h-16 w-16 shrink-0 rounded-xl bg-slate-100 object-cover" /><div className="min-w-0 flex-1"><Link to={`/products/${product.id}`} className="text-sm font-semibold text-slate-900 hover:text-amber-700">{product.name}</Link><p className="mt-1 text-xs text-slate-500">{product.seller_name} · Quantity {quantity}</p></div><span className="text-sm font-bold text-slate-900">{formatMoney(Number(product.price) * quantity)}</span></li>)}</ul>
-            <div className="mt-2 grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2"><div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Meetup location</p><p className="mt-1 text-sm font-semibold text-slate-800">{order.meetupLocation}</p>{order.meetupNotes && <p className="mt-1 text-xs leading-5 text-slate-500">{order.meetupNotes}</p>}</div><div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Payment preference</p><p className="mt-1 text-sm font-semibold text-slate-800">{paymentLabels[order.paymentPreference] || "Not selected"}</p></div></div>
+            <div className="mt-5 space-y-4 border-t border-slate-100 pt-5"><div><h2 className="text-sm font-bold text-slate-900">Track your items</h2><p className="mt-1 text-xs text-slate-500">Follow each seller's preparation and pickup progress.</p></div>{sellerGroups.map((group) => <div key={group.key} className="space-y-2"><p className="text-xs font-semibold text-slate-700">{group.sellerName}</p><OrderTrackingTimeline status={group.tracking.status} events={group.tracking.events} note={group.tracking.note} meetupLocation={order.meetupLocation} /></div>)}</div>
+            <div className="mt-4 grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2"><div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Meetup location</p><p className="mt-1 text-sm font-semibold text-slate-800">{order.meetupLocation}</p>{order.meetupNotes && <p className="mt-1 text-xs leading-5 text-slate-500">{order.meetupNotes}</p>}</div><div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Payment preference</p><p className="mt-1 text-sm font-semibold text-slate-800">{paymentLabels[order.paymentPreference] || "Not selected"}</p></div></div>
             <div className="mt-5 flex justify-between border-t border-slate-100 pt-5"><span className="text-sm font-semibold text-slate-700">Order total</span><span className="text-lg font-bold text-slate-950">{formatMoney(order.total ?? order.subtotal)}</span></div>
           </div>
           <p className="mt-4 text-center text-[11px] text-slate-400">This preview is saved on this device. No seller was notified and no payment was processed.</p>
@@ -151,6 +176,7 @@ const OrderDetailPage = () => {
   
   const canMarkReady = isSeller && order.status === "processing";
   const canConfirmOrder = isSeller && order.status === "pending";
+  const canConfirmReceipt = isBuyer && order.status === "ready";
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-12">
@@ -167,7 +193,7 @@ const OrderDetailPage = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Order Timeline - Shows payment status */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-              <OrderTimeline order={order} payment={payment} />
+              <OrderTimeline order={order} payment={payment} history={orderHistory} />
             </div>
 
             {/* Product Details */}
@@ -218,7 +244,7 @@ const OrderDetailPage = () => {
                 {canConfirmOrder && (
                   <button
                     onClick={async () => {
-                      await api.post(`/orders/${order.id}/update-status/`, { status: "processing" });
+                      await api.post(`/orders/${order.id}/status/`, { status: "processing", notes: "Seller confirmed the order and started preparation." });
                       toast.success("Order confirmed! You can now arrange meetup.");
                       fetchOrderDetails();
                     }}
@@ -236,6 +262,24 @@ const OrderDetailPage = () => {
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold disabled:opacity-50"
                   >
                     {markingReady ? <FontAwesomeIcon icon={faSpinner} className="animate-spin" /> : "Mark as Ready for Pickup"}
+                  </button>
+                )}
+
+                {canConfirmReceipt && (
+                  <button
+                    onClick={async () => {
+                      if (!window.confirm("Confirm that you received the item?")) return;
+                      try {
+                        await api.post(`/orders/${order.id}/status/`, { status: "completed", notes: "Buyer confirmed receiving the item." });
+                        toast.success("Item received. Order completed.");
+                        fetchOrderDetails();
+                      } catch {
+                        toast.error("Could not confirm item receipt");
+                      }
+                    }}
+                    className="w-full rounded-lg bg-amber-400 py-3 font-semibold text-slate-950"
+                  >
+                    Confirm item received
                   </button>
                 )}
 

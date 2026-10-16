@@ -15,18 +15,33 @@
 }
 
 @layer components {
-  button:not([data-button-neutral="true"]) {
+  button:not([data-button-neutral="true"]),
+  a[class*="inline-flex"][class*="rounded"][class*="px-"],
+  a[class*="bg-slate-950"],
+  a[class*="bg-amber-500"],
+  a[class*="bg-amber-400"],
+  a[class*="rounded-xl"][class*="py-3"][class*="border"] {
     background-color: #fbbf24 !important;
     border-color: #f59e0b !important;
     color: #111827 !important;
   }
 
-  button:not([data-button-neutral="true"]):hover:not(:disabled) {
+  button:not([data-button-neutral="true"]):hover:not(:disabled),
+  a[class*="inline-flex"][class*="rounded"][class*="px-"]:hover,
+  a[class*="bg-slate-950"]:hover,
+  a[class*="bg-amber-500"]:hover,
+  a[class*="bg-amber-400"]:hover,
+  a[class*="rounded-xl"][class*="py-3"][class*="border"]:hover {
     background-color: #f59e0b !important;
     border-color: #d97706 !important;
   }
 
-  button:not([data-button-neutral="true"]):focus-visible {
+  button:not([data-button-neutral="true"]):focus-visible,
+  a[class*="inline-flex"][class*="rounded"][class*="px-"]:focus-visible,
+  a[class*="bg-slate-950"]:focus-visible,
+  a[class*="bg-amber-500"]:focus-visible,
+  a[class*="bg-amber-400"]:focus-visible,
+  a[class*="rounded-xl"][class*="py-3"][class*="border"]:focus-visible {
     outline: 2px solid #d97706;
     outline-offset: 2px;
   }

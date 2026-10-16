@@ -1,5 +1,9 @@
 const ORDERS_KEY = "campusecom.previewOrders.v1";
 
+function notifyPreviewOrdersChanged() {
+  window.dispatchEvent(new Event("campusecom:preview-orders-change"));
+}
+
 export function readPreviewOrders() {
   try {
     const value = JSON.parse(window.localStorage.getItem(ORDERS_KEY) || "[]");
@@ -17,13 +21,21 @@ export function getPreviewBuyerOrderStatus(order) {
   if (normalized.every((status) => status === "completed")) return "Completed";
   if (normalized.every((status) => status === "cancelled")) return "Cancelled";
   if (normalized.some((status) => status === "cancelled")) return "Partially cancelled";
-  if (normalized.some((status) => status === "confirmed" || status === "completed")) return "Seller confirmed";
+  if (normalized.some((status) => status.includes("ready")) && normalized.every((status) => status.includes("ready") || status === "completed")) return "Ready for pickup";
+  if (normalized.some((status) => status.includes("process") || status.includes("prepar"))) return "Being prepared";
+  if (normalized.some((status) => status.includes("confirm") || status === "completed")) return "Seller confirmed";
   return order.status;
 }
 
 export function createPreviewOrder(cart, details) {
   const orders = readPreviewOrders();
   const now = new Date();
+  const sellerTracking = Object.fromEntries([...new Set(cart.items.map(({ product }) => String(product.owner_email || "").toLowerCase()).filter(Boolean))].map((email) => [email, {
+    status: "Pending seller confirmation",
+    note: "",
+    updatedAt: now.toISOString(),
+    events: [{ status: "Pending seller confirmation", note: "Order placed", at: now.toISOString() }],
+  }]));
   const order = {
     id: `CE-${now.getTime().toString().slice(-8)}`,
     createdAt: now.toISOString(),
@@ -41,8 +53,10 @@ export function createPreviewOrder(cart, details) {
     paymentPreference: details.paymentPreference,
     buyerEmail: details.buyerEmail || "",
     buyerName: details.buyerName || "",
+    sellerTracking,
   };
   window.localStorage.setItem(ORDERS_KEY, JSON.stringify([order, ...orders]));
+  notifyPreviewOrdersChanged();
   return order;
 }
 
@@ -59,9 +73,10 @@ export function updatePreviewOrderStatus(orderId, status) {
     if (!withinRefundWindow) return { error: "The 14-day refund window has expired or delivery date is missing." };
   }
   const updated = orders.map((order) => String(order.id) === String(orderId)
-    ? { ...order, status, sellerStatuses: {}, ...(String(status).toLowerCase() === "delivered" ? { deliveredAt: new Date().toISOString() } : {}) }
+    ? { ...order, status, ...(String(status).toLowerCase() === "delivered" ? { deliveredAt: new Date().toISOString() } : {}) }
     : order);
   window.localStorage.setItem(ORDERS_KEY, JSON.stringify(updated));
+  notifyPreviewOrdersChanged();
   return { order: updated.find((order) => String(order.id) === String(orderId)) };
 }
 
@@ -78,5 +93,6 @@ export function cancelPreviewOrder(orderId, buyerEmail) {
     ? { ...item, status: "Cancelled", cancelledAt: new Date().toISOString() }
     : item);
   window.localStorage.setItem(ORDERS_KEY, JSON.stringify(updated));
+  notifyPreviewOrdersChanged();
   return { order: updated.find((item) => String(item.id) === String(orderId)) };
 }

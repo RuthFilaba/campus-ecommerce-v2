@@ -1,15 +1,30 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, BarChart3, Check, ClipboardList, Package, X } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { readPreviewSellerOrders, updatePreviewSellerOrderStatus } from "../../services/previewSellerData";
+import { readPreviewSellerOrders, updatePreviewSellerOrderStatus, updatePreviewSellerOrderTracking } from "../../services/previewSellerData";
 import { getProductPrimaryImage } from "../../utils/productImages";
 import toast from "react-hot-toast";
 import { formatMoney } from "../../services/currency";
+import OrderTrackingTimeline from "../../components/order/OrderTrackingTimeline";
 
 export default function SellerPreviewActivityPage({ kind }) {
   const { user } = useAuth();
   const [sellerOrders, setSellerOrders] = useState(() => readPreviewSellerOrders(user?.email));
+  const [trackingNotes, setTrackingNotes] = useState(() => Object.fromEntries(readPreviewSellerOrders(user?.email).map((order) => [order.id, order.tracking?.note || ""])));
+  useEffect(() => {
+    const refreshOrders = () => {
+      const nextOrders = readPreviewSellerOrders(user?.email);
+      setSellerOrders(nextOrders);
+      setTrackingNotes(Object.fromEntries(nextOrders.map((order) => [order.id, order.tracking?.note || ""])));
+    };
+    window.addEventListener("campusecom:preview-orders-change", refreshOrders);
+    window.addEventListener("storage", refreshOrders);
+    return () => {
+      window.removeEventListener("campusecom:preview-orders-change", refreshOrders);
+      window.removeEventListener("storage", refreshOrders);
+    };
+  }, [user?.email]);
   const isOrders = kind === "orders";
   const visibleOrders = isOrders ? sellerOrders : sellerOrders.filter((order) => String(order.status).toLowerCase() === "completed");
   const revenue = visibleOrders.reduce((sum, order) => sum + Number(order.sellerSubtotal || 0), 0);
@@ -26,6 +41,24 @@ export default function SellerPreviewActivityPage({ kind }) {
     }
     setSellerOrders(readPreviewSellerOrders(user?.email));
     toast.success(`Order marked ${status.toLowerCase()}`);
+  };
+
+  const nextStatus = (status) => {
+    const current = String(status).toLowerCase();
+    if (current.includes("pending")) return { value: "Confirmed", label: "Confirm order" };
+    if (current.includes("confirm")) return { value: "Processing", label: "Start preparing" };
+    if (current.includes("process") || current.includes("prepar")) return { value: "Ready for pickup", label: "Mark ready for pickup" };
+    if (current.includes("ready")) return { value: "Completed", label: "Mark completed" };
+    return null;
+  };
+
+  const saveTrackingNote = (order) => {
+    if (!updatePreviewSellerOrderTracking(user?.email, order.id, { note: trackingNotes[order.id] || "" })) {
+      toast.error("Could not save the buyer update");
+      return;
+    }
+    setSellerOrders(readPreviewSellerOrders(user?.email));
+    toast.success("Tracking update shared with the buyer");
   };
 
   return (
@@ -54,7 +87,8 @@ export default function SellerPreviewActivityPage({ kind }) {
                   ))}
                 </ul>
                 <div className="mt-3 flex flex-wrap justify-between gap-2 text-xs"><span className="text-slate-500">Meetup: {order.meetupLocation}</span><span className="font-bold text-slate-900">{isOrders ? "Order total" : "Sale total"} {formatMoney(order.sellerSubtotal)}</span></div>
-                {isOrders && order.status !== "Completed" && order.status !== "Cancelled" && <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-3">{order.status.toLowerCase().includes("pending") && <button type="button" onClick={() => setOrderStatus(order, "Confirmed")} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-950 px-3 text-xs font-semibold text-white transition hover:bg-slate-800"><Check size={14} /> Confirm order</button>}<button type="button" onClick={() => setOrderStatus(order, "Completed")} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-emerald-200 px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-50"><Check size={14} /> Mark completed</button><button type="button" onClick={() => setOrderStatus(order, "Cancelled")} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-rose-200 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-50"><X size={14} /> Cancel</button></div>}
+                {isOrders && <div className="mt-4"><OrderTrackingTimeline status={order.status} events={order.tracking?.events} note={order.tracking?.note} meetupLocation={order.meetupLocation} compact /></div>}
+                {isOrders && order.status !== "Completed" && order.status !== "Cancelled" && <div className="mt-4 space-y-3 border-t border-slate-100 pt-3"><label className="block text-xs font-semibold text-slate-700">Tracking update for buyer<textarea rows={2} value={trackingNotes[order.id] || ""} onChange={(event) => setTrackingNotes((notes) => ({ ...notes, [order.id]: event.target.value }))} placeholder="Share a preparation or pickup update" className="mt-1.5 w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-xs font-normal outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100" /></label><div className="flex flex-wrap justify-end gap-2">{nextStatus(order.status) && <button type="button" onClick={() => setOrderStatus(order, nextStatus(order.status).value)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-amber-400 px-3 text-xs font-semibold text-slate-950 transition hover:bg-amber-300"><Check size={14} /> {nextStatus(order.status).label}</button>}<button type="button" onClick={() => saveTrackingNote(order)} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">Save buyer update</button>{order.status.toLowerCase().includes("pending") && <button type="button" onClick={() => setOrderStatus(order, "Cancelled")} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-rose-200 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-50"><X size={14} /> Cancel</button>}</div></div>}
               </article>
             ))}
           </section>

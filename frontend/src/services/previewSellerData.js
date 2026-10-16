@@ -110,11 +110,16 @@ export function readPreviewSellerOrders(ownerEmail) {
     const items = (order.items || []).filter(({ product }) => product?.owner_email === normalizedEmail);
     if (!items.length) return [];
     const subtotal = items.reduce((sum, { product, quantity }) => sum + Number(product.price || 0) * Number(quantity || 0), 0);
-    return [{ ...order, status: order.sellerStatuses?.[normalizedEmail] || order.status, items, sellerSubtotal: subtotal }];
+    const tracking = order.sellerTracking?.[normalizedEmail] || {};
+    return [{ ...order, status: order.sellerStatuses?.[normalizedEmail] || tracking.status || order.status, tracking, items, sellerSubtotal: subtotal }];
   });
 }
 
 export function updatePreviewSellerOrderStatus(ownerEmail, orderId, status) {
+  return updatePreviewSellerOrderTracking(ownerEmail, orderId, { status });
+}
+
+export function updatePreviewSellerOrderTracking(ownerEmail, orderId, updates = {}) {
   if (!ownerEmail) return false;
   const normalizedEmail = ownerEmail.toLowerCase();
   const orders = (() => {
@@ -127,7 +132,23 @@ export function updatePreviewSellerOrderStatus(ownerEmail, orderId, status) {
   })();
   const order = orders.find((candidate) => String(candidate.id) === String(orderId));
   if (!order || !(order.items || []).some(({ product }) => product?.owner_email === normalizedEmail)) return false;
+  const previous = order.sellerTracking?.[normalizedEmail] || {
+    status: order.sellerStatuses?.[normalizedEmail] || order.status || "Pending seller confirmation",
+    note: "",
+    events: [{ status: order.sellerStatuses?.[normalizedEmail] || order.status || "Pending seller confirmation", note: "Order placed", at: order.createdAt }],
+  };
+  const status = updates.status || previous.status;
+  const note = typeof updates.note === "string" ? updates.note.trim() : previous.note || "";
+  const now = new Date().toISOString();
+  const changed = String(status) !== String(previous.status) || note !== (previous.note || "");
+  const events = Array.isArray(previous.events) ? [...previous.events] : [];
+  if (changed) events.push({ status, note, at: now });
   order.sellerStatuses = { ...(order.sellerStatuses || {}), [normalizedEmail]: status };
+  order.sellerTracking = {
+    ...(order.sellerTracking || {}),
+    [normalizedEmail]: { ...previous, status, note, updatedAt: changed ? now : previous.updatedAt || now, events },
+  };
   window.localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+  window.dispatchEvent(new Event("campusecom:preview-orders-change"));
   return true;
 }
