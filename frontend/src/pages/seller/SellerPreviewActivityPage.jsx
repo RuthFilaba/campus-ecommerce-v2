@@ -8,6 +8,7 @@ import { getProductPrimaryImage } from "../../utils/productImages";
 import toast from "react-hot-toast";
 import { formatMoney } from "../../services/currency";
 import OrderTrackingTimeline from "../../components/order/OrderTrackingTimeline";
+import { getOrderStatusTone } from "../../utils/orderStatusTone";
 
 export default function SellerPreviewActivityPage({ kind }) {
   const { user } = useAuth();
@@ -81,7 +82,7 @@ export default function SellerPreviewActivityPage({ kind }) {
               <article key={order.id} className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div><p className="font-mono text-xs font-bold text-slate-900">{order.id}</p><p className="mt-1 text-[11px] text-slate-500">{new Date(order.createdAt).toLocaleString("en-ZM", { dateStyle: "medium", timeStyle: "short" })} · Preview buyer</p></div>
-                  <span className={`rounded-full px-3 py-1.5 text-[10px] font-bold ${order.status === "Completed" ? "bg-emerald-50 text-emerald-800" : order.status === "Cancelled" ? "bg-rose-50 text-rose-700" : "bg-amber-50 text-amber-800"}`}>{order.status}</span>
+                  <span className={`rounded-full px-3 py-1.5 text-[10px] font-bold ${getOrderStatusTone(order.status)}`}>{order.status}</span>
                 </div>
                 <ul className="mt-4 divide-y divide-slate-100 border-y border-slate-100">
                   {order.items.map(({ product, quantity }, index) => (

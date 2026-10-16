@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../../services/api";
 import toast from "react-hot-toast";
 import OrderTrackingTimeline from "../../components/order/OrderTrackingTimeline";
+import { getOrderStatusTone } from "../../utils/orderStatusTone";
 
 export default function SellerOrdersPage() {
   const [activeTab, setActiveTab] = useState("pending");
@@ -48,7 +49,7 @@ export default function SellerOrdersPage() {
   const completedOrders = orders.filter(o => o.status === "completed");
 
   const tabs = [
-    { id: "pending", label: "Pending", count: pendingOrders.length, color: "bg-yellow-100 text-yellow-800" },
+    { id: "pending", label: "Pending", count: pendingOrders.length, color: "bg-blue-100 text-blue-800" },
     { id: "processing", label: "Processing", count: processingOrders.length, color: "bg-blue-100 text-blue-800" },
     { id: "ready", label: "Ready", count: readyOrders.length, color: "bg-green-100 text-green-800" },
     { id: "completed", label: "Completed", count: completedOrders.length, color: "bg-gray-100 text-gray-800" }
@@ -110,12 +111,7 @@ export default function SellerOrdersPage() {
                 </div>
                 
                 <div className="text-right">
-                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                    order.status === "pending" ? "bg-yellow-100 text-yellow-800" :
-                    order.status === "processing" ? "bg-blue-100 text-blue-800" :
-                    order.status === "ready" ? "bg-green-100 text-green-800" :
-                    "bg-gray-100 text-gray-800"
-                  }`}>
+                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getOrderStatusTone(order.status)}`}>
                     {order.status.toUpperCase()}
                   </span>
                   

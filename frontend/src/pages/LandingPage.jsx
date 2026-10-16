@@ -30,7 +30,7 @@ function FeaturedProductCard({ product }) {
 export default function LandingPage() {
   const catalogue = useMemo(() => [...previewProducts, ...(isPreviewAuth ? readAllPreviewSellerProducts().filter((product) => product.is_active !== false && product.is_approved === true) : [])].filter((product) => product.is_active !== false && product.is_approved !== false), []);
   const featuredProducts = catalogue.filter((product) => Number(product.stock) > 0).slice(0, 4);
-  const recentlyAdded = catalogue.filter((product) => product.created_at || product.createdAt).sort((a, b) => new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt)).slice(0, 4);
+  const recentlyAdded = catalogue.map((product, index) => ({ product, index, createdAt: new Date(product.created_at || product.createdAt || 0).getTime() })).filter(({ product }) => Number(product.stock) > 0).sort((a, b) => (b.createdAt - a.createdAt) || (b.index - a.index)).slice(0, 4).map(({ product }) => product);
   return (
     <div className="overflow-hidden bg-white text-slate-900">
       <main>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowDownUp, ArrowRight, ChevronDown, Filter, Search, SlidersHorizontal, Sparkles, Star, X } from "lucide-react";
+import { ArrowDownUp, ArrowLeft, ArrowRight, ChevronDown, Filter, Search, SlidersHorizontal, Sparkles, Star, X } from "lucide-react";
 import { categories, getCategoryLabel, getConditionLabel, previewProducts } from "../data/previewProducts";
 import PremiumBreadcrumb from "../components/common/PremiumBreadcrumb";
 import { isPreviewAuth } from "../services/auth";
@@ -66,6 +66,8 @@ export default function ProductsPage() {
   const [minimumInput, setMinimumInput] = useState(searchParams.get("min_price") || "");
   const [maximumInput, setMaximumInput] = useState(searchParams.get("max_price") || "");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
 
   const category = searchParams.get("category") || "";
   const condition = searchParams.get("condition") || "";
@@ -121,6 +123,10 @@ export default function ProductsPage() {
   }, [availability, brand, catalogue, category, condition, maximum, minimum, minimumRating, query, sort]);
 
   const activeFilterCount = [category, condition, availability, brand, minimumRating, searchParams.get("min_price"), searchParams.get("max_price")].filter(Boolean).length;
+  const pageCount = Math.max(1, Math.ceil(products.length / pageSize));
+  const pageProducts = products.slice((page - 1) * pageSize, page * pageSize);
+  useEffect(() => setPage(1), [category, condition, query, sort, availability, minimumRating, brand, minimum, maximum]);
+  useEffect(() => { if (page > pageCount) setPage(pageCount); }, [page, pageCount]);
   const clearFilters = () => {
     setSearchInput("");
     setMinimumInput("");
@@ -208,7 +214,7 @@ export default function ProductsPage() {
 
         {products.length > 0 ? (
           <div className="mt-6 grid grid-cols-2 gap-3 sm:mt-7 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-            {products.map((product) => <PreviewProductCard key={product.id} product={product} />)}
+            {pageProducts.map((product) => <PreviewProductCard key={product.id} product={product} />)}
           </div>
         ) : (
           <div className="mt-8 rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-16 text-center">
@@ -219,6 +225,7 @@ export default function ProductsPage() {
           </div>
         )}
 
+        {pageCount > 1 && <nav aria-label="Product pages" className="mt-8 flex flex-wrap items-center justify-center gap-2"><button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1} className="inline-flex h-10 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"><ArrowLeft size={14} /> Previous</button><span aria-live="polite" className="px-2 text-xs font-medium text-slate-600">Page {page} of {pageCount}</span><button type="button" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={page === pageCount} className="inline-flex h-10 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40">Next <ArrowRight size={14} /></button></nav>}
         <p className="mt-8 flex items-center justify-center gap-2 text-center text-[11px] text-slate-400"><Filter size={13} /> Preview catalog · Listings and seller details are sample content until backend connection.</p>
       </div>
     </div>

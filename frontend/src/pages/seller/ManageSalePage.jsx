@@ -2,6 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import api from "../../services/api";
 import toast from "react-hot-toast";
+import { getOrderStatusTone } from "../../utils/orderStatusTone";
 
 export default function ManageSalePage() {
   const { id } = useParams();
@@ -107,13 +108,7 @@ export default function ManageSalePage() {
           </div>
           <div>
             <p className="text-gray-500">Current Status</p>
-            <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-              order.status === "pending" ? "bg-yellow-100 text-yellow-800" :
-              order.status === "processing" ? "bg-blue-100 text-blue-800" :
-              order.status === "ready" ? "bg-green-100 text-green-800" :
-              order.status === "completed" ? "bg-gray-100 text-gray-800" :
-              "bg-red-100 text-red-800"
-            }`}>
+            <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getOrderStatusTone(order.status)}`}>
               {order.status.toUpperCase()}
             </span>
           </div>

@@ -90,6 +90,7 @@ export default function ProductDetailPage() {
     navigate("/checkout");
   };
 
+
   const submitReview = (event) => {
     event.preventDefault();
     if (!user?.email || !reviewComment.trim()) return;

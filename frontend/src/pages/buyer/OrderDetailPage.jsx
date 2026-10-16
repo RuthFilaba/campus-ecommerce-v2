@@ -24,6 +24,7 @@ import { formatMoney } from "../../services/currency";
 import OrderTrackingTimeline from "../../components/order/OrderTrackingTimeline";
 import { groupPreviewOrderItems } from "../../services/orderTracking";
 import BuyerDisputeDetails from "./BuyerDisputeDetails";
+import { getOrderStatusTone } from "../../utils/orderStatusTone";
 
 const OrderDetailPage = () => {
   const { id } = useParams();
@@ -173,7 +174,7 @@ const OrderDetailPage = () => {
         <div className="container-custom max-w-4xl pt-8 sm:pt-10">
           <PremiumBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Order history", to: "/orders" }, { label: `Order ${order.id}` }]} />
           <div className="mt-5 rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-7">
-            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-5"><div><p className="text-[10px] font-bold uppercase tracking-[.15em] text-amber-700">Preview order</p><h1 className="mt-1 font-mono text-xl font-bold text-slate-950">{order.id}</h1><p className="mt-2 text-xs text-slate-500">Placed {new Date(order.createdAt).toLocaleString("en-ZM", { dateStyle: "medium", timeStyle: "short" })}</p></div><span className="rounded-full bg-amber-50 px-3 py-1.5 text-[11px] font-bold text-amber-800">{getPreviewBuyerOrderStatus(order)}</span></div>
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-5"><div><p className="text-[10px] font-bold uppercase tracking-[.15em] text-amber-700">Preview order</p><h1 className="mt-1 font-mono text-xl font-bold text-slate-950">{order.id}</h1><p className="mt-2 text-xs text-slate-500">Placed {new Date(order.createdAt).toLocaleString("en-ZM", { dateStyle: "medium", timeStyle: "short" })}</p></div><span className={`rounded-full px-3 py-1.5 text-[11px] font-bold ${getOrderStatusTone(getPreviewBuyerOrderStatus(order))}`}>{getPreviewBuyerOrderStatus(order)}</span></div>
             <h2 className="mt-5 text-sm font-bold text-slate-900">Items</h2>
             <ul className="mt-2 divide-y divide-slate-100">{order.items.map(({ product, quantity }, index) => <li key={`${product.id}-${index}`} className="flex items-center gap-3 py-4"><img src={getProductPrimaryImage(product)} alt="" className="h-16 w-16 shrink-0 rounded-xl bg-slate-100 object-cover" /><div className="min-w-0 flex-1"><Link to={`/products/${product.id}`} className="text-sm font-semibold text-slate-900 hover:text-amber-700">{product.name}</Link><p className="mt-1 text-xs text-slate-500">{product.seller_name} · Quantity {quantity}</p></div><span className="text-sm font-bold text-slate-900">{formatMoney(Number(product.price) * quantity)}</span></li>)}</ul>
             <div className="mt-5 space-y-4 border-t border-slate-100 pt-5"><div><h2 className="text-sm font-bold text-slate-900">Track your items</h2><p className="mt-1 text-xs text-slate-500">Follow each seller's preparation and pickup progress.</p></div>{sellerGroups.map((group) => <div key={group.key} className="space-y-2"><p className="text-xs font-semibold text-slate-700">{group.sellerName}</p><OrderTrackingTimeline status={group.tracking.status} events={group.tracking.events} note={group.tracking.note} meetupLocation={order.meetupLocation} /></div>)}</div>
@@ -323,7 +324,7 @@ const OrderDetailPage = () => {
                   <div className={`p-3 rounded-lg text-sm ${
                     payment.status === "completed" 
                       ? "bg-green-100 text-green-700" 
-                      : "bg-yellow-100 text-yellow-700"
+                      : "bg-blue-100 text-blue-700"
                   }`}>
                     <p className="font-semibold">Payment Status:</p>
                     <p>{payment.status === "completed" ? "? Payment Confirmed" : "? Awaiting Payment Confirmation"}</p>

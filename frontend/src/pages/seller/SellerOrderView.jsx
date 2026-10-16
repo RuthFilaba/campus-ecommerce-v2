@@ -16,6 +16,7 @@ import {
   faClock
 } from "@fortawesome/free-solid-svg-icons";
 import toast from "react-hot-toast";
+import { getOrderStatusTone } from "../../utils/orderStatusTone";
 
 const SellerOrderView = () => {
   const { id } = useParams();
@@ -101,12 +102,7 @@ const SellerOrderView = () => {
               <h1 className="text-2xl font-bold">Order #{order.id}</h1>
               <p className="text-gray-500 text-sm">{new Date(order.created_at).toLocaleString()}</p>
             </div>
-            <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
-              order.status === "completed" ? "bg-green-100 text-green-700" :
-              order.status === "pending" ? "bg-yellow-100 text-yellow-700" :
-              order.status === "processing" ? "bg-blue-100 text-blue-700" :
-              "bg-gray-100 text-gray-700"
-            }`}>
+            <div className={`px-3 py-1 rounded-full text-sm font-semibold ${getOrderStatusTone(order.status)}`}>
               {order.status.toUpperCase()}
             </div>
           </div>

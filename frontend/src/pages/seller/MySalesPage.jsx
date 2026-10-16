@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { getOrderStatusTone } from '../../utils/orderStatusTone';
 
 const MySalesPage = () => {
   const { user } = useAuth();
@@ -22,17 +23,6 @@ const MySalesPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: 'bg-yellow-500',
-      processing: 'bg-blue-500',
-      ready: 'bg-purple-500',
-      completed: 'bg-green-500',
-      cancelled: 'bg-red-500',
-    };
-    return colors[status] || 'bg-gray-500';
   };
 
   if (loading) return <LoadingSpinner />;
@@ -71,7 +61,7 @@ const MySalesPage = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.quantity}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">K{order.total_price}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full text-white ${getStatusColor(order.status)}`}>
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getOrderStatusTone(order.status)}`}>
                       {order.status_display || order.status}
                     </span>
                   </td>

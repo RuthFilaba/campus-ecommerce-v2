@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 import { formatMoney } from "../../services/currency";
 import api from "../../services/api";
 import { isPreviewAuth } from "../../services/auth";
+import { getOrderStatusTone } from "../../utils/orderStatusTone";
 
 const paymentLabels = {
   "meetup-cash": "Cash at meetup",
@@ -108,7 +109,7 @@ export default function OrdersPage() {
               <li key={order.id} className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/70 px-4 py-4 sm:px-6">
                   <div><Link to={`/orders/${order.id}`} className="font-mono text-xs font-bold text-slate-900 transition hover:text-amber-700">{order.id} <span aria-hidden="true">→</span></Link><p className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500"><Clock3 size={12} />{new Date(order.createdAt).toLocaleString("en-ZM", { dateStyle: "medium", timeStyle: "short" })}</p></div>
-                  <div className="flex items-center gap-2"><span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-[10px] font-bold text-amber-800"><PackageCheck size={13} />{isPreviewAuth ? getPreviewBuyerOrderStatus(order) : order.status}</span>{(isPreviewAuth ? getPreviewBuyerOrderStatus(order).toLowerCase().includes("pending") : order.can_cancel) && <button type="button" onClick={() => cancelOrder(order)} className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-2.5 py-1.5 text-[10px] font-semibold text-rose-700 transition hover:bg-rose-50"><X size={12} /> Cancel</button>}</div>
+                  <div className="flex items-center gap-2"><span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold ${getOrderStatusTone(isPreviewAuth ? getPreviewBuyerOrderStatus(order) : order.status)}`}><PackageCheck size={13} />{isPreviewAuth ? getPreviewBuyerOrderStatus(order) : order.status}</span>{(isPreviewAuth ? getPreviewBuyerOrderStatus(order).toLowerCase().includes("pending") : order.can_cancel) && <button type="button" onClick={() => cancelOrder(order)} className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-2.5 py-1.5 text-[10px] font-semibold text-rose-700 transition hover:bg-rose-50"><X size={12} /> Cancel</button>}</div>
                 </div>
                 <div className="divide-y divide-slate-100 px-4 sm:px-6">
                   {order.items.map(({ product, quantity }, index) => <div key={`${order.id}-${product.id}-${index}`} className="flex items-center gap-3 py-4"><div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100"><img src={getProductPrimaryImage(product)} alt="" className="h-full w-full object-cover" /></div><div className="min-w-0 flex-1"><Link to={`/products/${product.id}`} className="line-clamp-2 text-sm font-semibold text-slate-900 transition hover:text-amber-700">{product.name}</Link><p className="mt-1 text-xs text-slate-500">{product.seller_name} · Qty {quantity}</p></div><span className="shrink-0 text-sm font-bold text-slate-900">{formatMoney(Number(product.price) * quantity)}</span></div>)}

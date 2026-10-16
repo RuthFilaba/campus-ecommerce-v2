@@ -20,7 +20,7 @@ export default function OrderTrackingTimeline({ status, events = [], note = "", 
           const event = [...events].reverse().find((item) => getTrackingStepIndex(item.status) === index);
           return (
             <li key={step.key} className="flex min-w-0 items-start gap-2">
-              <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full ${done ? "bg-emerald-100 text-emerald-700" : current ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-400"}`}>
+              <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full ${done ? "bg-emerald-100 text-emerald-700" : current ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-400"}`}>
                 {done ? <Check size={12} /> : <Circle size={8} fill="currentColor" />}
               </span>
               <span className="min-w-0"><span className={`block text-xs font-semibold ${done || current ? "text-slate-900" : "text-slate-400"}`}>{step.label}</span>{!compact && event?.at && <time className="mt-0.5 block text-[10px] text-slate-400">{new Date(event.at).toLocaleString("en-ZM", { dateStyle: "medium", timeStyle: "short" })}</time>}</span>

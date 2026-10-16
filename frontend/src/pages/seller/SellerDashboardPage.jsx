@@ -130,7 +130,7 @@ const SellerDashboardPage = () => {
     { title: "Total Products", value: stats.totalProducts, icon: faBox, color: "bg-blue-500", link: "/seller/products" },
     { title: "Total Sales", value: stats.totalSales, icon: faShoppingCart, color: "bg-green-500", link: "/seller/sales" },
     { title: "Total Revenue", value: `K${stats.totalRevenue.toFixed(2)}`, icon: faMoneyBill, color: "bg-amber-500", link: "/seller/sales" },
-    { title: "Pending Orders", value: stats.pendingOrders, icon: faClock, color: "bg-yellow-500", link: "/seller/sales?filter=pending" },
+    { title: "Pending Orders", value: stats.pendingOrders, icon: faClock, color: "bg-blue-500", link: "/seller/sales?filter=pending" },
     { title: "Avg Rating", value: stats.avgRating || "N/A", icon: faStar, color: "bg-purple-500", link: "#" }
   ];
 
@@ -255,12 +255,7 @@ const SellerDashboardPage = () => {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-amber-600">K{parseFloat(order.total_price).toFixed(2)}</p>
-                      <p className={`text-xs ${
-                        order.status === "pending" ? "text-yellow-600" :
-                        order.status === "processing" ? "text-blue-600" :
-                        order.status === "ready" ? "text-green-600" :
-                        order.status === "completed" ? "text-gray-600" : "text-red-600"
-                      }`}>
+                      <p className={`text-xs ${order.status === "pending" || order.status === "processing" || order.status === "ready" ? "text-blue-700" : order.status === "completed" ? "text-green-700" : "text-red-700"}`}>
                         {order.status}
                       </p>
                     </div>

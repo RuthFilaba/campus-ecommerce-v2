@@ -96,7 +96,7 @@ const OrderTimeline = ({ order, payment, history = [] }) => {
                 step.isCompleted 
                   ? "bg-green-500 text-white shadow-lg" 
                   : index === currentStep 
-                    ? "bg-amber-500 text-white animate-pulse"
+                    ? "bg-blue-600 text-white animate-pulse"
                     : "bg-gray-200 dark:bg-gray-700 text-gray-400"
               }`}>
                 <FontAwesomeIcon icon={step.icon} className="text-xl" />
@@ -111,7 +111,7 @@ const OrderTimeline = ({ order, payment, history = [] }) => {
               <div className="flex-1 pt-2">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <h4 className={`font-semibold ${
-                    step.isCompleted ? "text-green-600" : index === currentStep ? "text-amber-500" : "text-gray-500"
+                    step.isCompleted ? "text-green-600" : index === currentStep ? "text-blue-600" : "text-gray-500"
                   }`}>
                     {step.title}
                   </h4>
@@ -142,7 +142,7 @@ const OrderTimeline = ({ order, payment, history = [] }) => {
 
                 {!step.isCompleted && index === currentStep && (
                   <div className="mt-2 flex items-center gap-2 text-xs">
-                    <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-1 rounded animate-pulse">
+                    <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded animate-pulse">
                       <FontAwesomeIcon icon={faClock} className="mr-1" />
                       Waiting for confirmation
                     </span>

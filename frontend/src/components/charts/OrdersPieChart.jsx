@@ -15,10 +15,10 @@ const OrdersPieChart = ({ data }) => {
       {
         data: Object.values(data),
         backgroundColor: [
-          '#F59E0B', // pending - amber
+          '#3B82F6', // pending - blue
           '#3B82F6', // processing - blue
           '#10B981', // ready - green
-          '#6B7280', // completed - gray
+          '#10B981', // completed - green
           '#EF4444'  // cancelled - red
         ],
         borderWidth: 2,
