@@ -15,6 +15,22 @@
 }
 
 @layer components {
+  button:not([data-button-neutral="true"]) {
+    background-color: #fbbf24 !important;
+    border-color: #f59e0b !important;
+    color: #111827 !important;
+  }
+
+  button:not([data-button-neutral="true"]):hover:not(:disabled) {
+    background-color: #f59e0b !important;
+    border-color: #d97706 !important;
+  }
+
+  button:not([data-button-neutral="true"]):focus-visible {
+    outline: 2px solid #d97706;
+    outline-offset: 2px;
+  }
+
   .container-custom {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
