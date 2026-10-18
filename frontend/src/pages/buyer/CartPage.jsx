@@ -5,16 +5,19 @@ import { clearDirectCheckout } from "../../services/purchaseFlow";
 import PremiumBreadcrumb from "../../components/common/PremiumBreadcrumb";
 import { getProductPrimaryImage } from "../../utils/productImages";
 import { formatMoney } from "../../services/currency";
-import { readPreviewWishlist, writePreviewWishlist } from "../../services/previewWishlist";
+import api from "../../services/api";
 import toast from "react-hot-toast";
 
 export default function CartPage() {
   const { cart, updateQuantity, removeItem } = useCart();
-  const saveForLater = (product) => {
-    const saved = readPreviewWishlist();
-    if (!saved.includes(product.id)) writePreviewWishlist([...saved, product.id]);
-    removeItem(product.id);
-    toast.success("Saved to your wishlist");
+  const saveForLater = async (product) => {
+    try {
+      await api.post("/wishlist/add/", { product_id: product.id });
+      await removeItem(product.id);
+      toast.success("Saved to your wishlist");
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Could not save this item");
+    }
   };
   const hasStockIssue = cart.items.some(({ product, quantity }) => Number(product.stock ?? 0) < quantity);
 
@@ -70,7 +73,7 @@ export default function CartPage() {
             <div className="flex items-end justify-between"><span className="text-sm font-semibold text-slate-700">Subtotal</span><span className="text-xl font-bold tracking-tight text-slate-950">{formatMoney(cart.total)}</span></div>
             {hasStockIssue && <p role="alert" className="mt-4 rounded-lg bg-rose-50 p-3 text-xs leading-5 text-rose-800">Stock changed for one or more items. Adjust quantities before checkout.</p>}
             <Link to="/checkout" onClick={clearDirectCheckout} aria-disabled={hasStockIssue} className={`mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 text-sm font-bold text-slate-950 transition hover:bg-amber-300 ${hasStockIssue ? "pointer-events-none opacity-50" : ""}`}>Continue to checkout <ArrowRight size={16} /></Link>
-            <div className="mt-5 flex items-start gap-2.5 rounded-xl bg-emerald-50/80 p-3 text-[11px] leading-5 text-emerald-800"><ShieldCheck size={15} className="mt-0.5 shrink-0 text-emerald-700" /><span>Preview cart is saved on this device. No order or payment is placed.</span></div>
+            <div className="mt-5 flex items-start gap-2.5 rounded-xl bg-emerald-50/80 p-3 text-[11px] leading-5 text-emerald-800"><ShieldCheck size={15} className="mt-0.5 shrink-0 text-emerald-700" /><span>Your cart is saved to your marketplace account.</span></div>
           </aside>
         </div>
       </div>

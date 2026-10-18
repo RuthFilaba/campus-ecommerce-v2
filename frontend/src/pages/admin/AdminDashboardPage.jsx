@@ -49,7 +49,7 @@ function MetricCard({ label, value, detail, icon: Icon, tone = "amber" }) {
   return <article className={`${panelClass} p-5`}><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-medium text-slate-500">{label}</p><p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{value}</p><p className="mt-1 text-xs text-slate-400">{detail}</p></div><span className={`grid h-10 w-10 place-items-center rounded-xl ${tones[tone]}`}><Icon size={19} /></span></div></article>;
 }
 
-export default function AdminDashboardPage() {
+function AdminDashboardPreview() {
   const { user } = useAuth();
   const location = useLocation();
   const section = sections[location.pathname] ? location.pathname : "/admin/dashboard";
@@ -247,4 +247,9 @@ export default function AdminDashboardPage() {
       </div>
     </div>
   );
+}
+
+export default function AdminDashboardPage() {
+  if (isPreviewAuth) return <AdminDashboardPreview />;
+  return <div className="container-custom max-w-3xl py-16"><section role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-6"><h1 className="text-lg font-semibold text-slate-900">Admin workspace unavailable</h1><p className="mt-2 text-sm leading-6 text-slate-700">The current backend does not provide the admin dashboard operations shown here. No local preview records are displayed in API mode.</p><p className="mt-3 text-sm text-slate-700">Use the Django admin site for user verification and product review.</p></section></div>;
 }

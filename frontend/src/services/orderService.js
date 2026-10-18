@@ -27,13 +27,13 @@ const orderService = {
 
   // Update order status
   updateOrderStatus: async (orderId, status, notes = '') => {
-    const response = await api.post(`/orders/${orderId}/update-status/`, { status, notes });
+    const response = await api.post(`/orders/${orderId}/status/`, { status, notes });
     return response.data;
   },
 
   // Arrange meetup for order
   arrangeMeetup: async (orderId, meetupData) => {
-    const response = await api.post(`/orders/${orderId}/arrange-meetup/`, meetupData);
+    const response = await api.post(`/orders/${orderId}/meetup/`, meetupData);
     return response.data;
   },
 

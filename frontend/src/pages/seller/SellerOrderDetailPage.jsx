@@ -88,7 +88,7 @@ const SellerOrderDetailPage = () => {
     setUpdating(true);
     try {
       console.log(`Updating order ${id} to status: ${newStatus}`);
-      const response = await api.post(`/orders/${id}/update-status/`, {
+      const response = await api.post(`/orders/${id}/status/`, {
         status: newStatus,
         notes: `Order status updated by seller to ${newStatus}`
       });

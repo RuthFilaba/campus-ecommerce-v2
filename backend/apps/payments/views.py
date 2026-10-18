@@ -95,6 +95,15 @@ class VerifyPaymentView(APIView):
             'paid_at': payment.paid_at,
         })
 
+class OrderPaymentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, order_id):
+        payment = get_object_or_404(Payment, order_id=order_id)
+        if payment.order.buyer_id != request.user.id and payment.order.seller_id != request.user.id:
+            return Response({'error': 'Not authorized'}, status=403)
+        return Response(PaymentSerializer(payment).data)
+
 class ConfirmPaymentView(APIView):
     """
     Confirm payment for cash on meetup
@@ -118,8 +127,9 @@ class ConfirmPaymentView(APIView):
         payment.save()
         
         # Update order status
-        payment.order.status = 'processing'
-        payment.order.save()
+        if payment.order.status == 'pending':
+            payment.order.status = 'processing'
+            payment.order.save(update_fields=['status', 'updated_at'])
         
         # Send payment confirmation email (REQ-17)
         try:

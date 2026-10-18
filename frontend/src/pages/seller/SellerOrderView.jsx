@@ -58,7 +58,7 @@ const SellerOrderView = () => {
   const updateStatus = async (newStatus) => {
     setUpdating(true);
     try {
-      await api.post(`/orders/${id}/update-status/`, { status: newStatus });
+      await api.post(`/orders/${id}/status/`, { status: newStatus });
       toast.success(`Order ${newStatus}`);
       loadOrder();
     } catch (error) {

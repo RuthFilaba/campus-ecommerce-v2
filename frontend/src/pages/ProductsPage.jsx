@@ -1,13 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowDownUp, ArrowLeft, ArrowRight, ChevronDown, Filter, Search, SlidersHorizontal, Sparkles, Star, X } from "lucide-react";
-import { categories, getCategoryLabel, getConditionLabel, previewProducts } from "../data/previewProducts";
+import { ArrowDownUp, ArrowLeft, ArrowRight, ChevronDown, Filter, Search, SlidersHorizontal, X } from "lucide-react";
+import { categories, getCategoryLabel, getConditionLabel } from "../data/previewProducts";
 import PremiumBreadcrumb from "../components/common/PremiumBreadcrumb";
-import { isPreviewAuth } from "../services/auth";
-import { readAllPreviewSellerProducts } from "../services/previewSellerData";
+import api from "../services/api";
 import { getProductPrimaryImage } from "../utils/productImages";
-import { readAdminPreviewCategories } from "../services/adminPreview";
-import { readPreviewReviews } from "../services/previewReviews";
 import { formatMoney, readPreferredCurrency, readZmwPerUsdRate } from "../services/currency";
 
 const conditions = [
@@ -28,9 +25,6 @@ const sortOptions = [
 function PreviewProductCard({ product }) {
   const [imageFailed, setImageFailed] = useState(false);
   const condition = getConditionLabel(product.condition);
-  const reviews = readPreviewReviews(product.id);
-  const rating = reviews.length ? reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length : Number(product.rating || 0);
-  const reviewCount = reviews.length || Number(product.review_count || 0);
 
   return (
     <article className="group min-w-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-white transition duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_18px_42px_rgba(15,23,42,.09)]">
@@ -49,7 +43,6 @@ function PreviewProductCard({ product }) {
         <div className="p-4 sm:p-5">
           <p className="text-[10px] font-bold uppercase tracking-[.13em] text-slate-400">{getCategoryLabel(product.category)}</p>
           <h2 className="mt-1.5 min-h-11 text-sm font-semibold leading-5 tracking-[-.015em] text-slate-900 sm:text-[15px]">{product.name}</h2>
-          {rating > 0 && <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600"><Star size={12} className="fill-amber-400 text-amber-500" /> {rating.toFixed(1)} <span className="font-normal text-slate-400">({reviewCount})</span></p>}
           <div className="mt-4 flex items-end justify-between gap-3 border-t border-slate-100 pt-3.5">
             <span className="text-lg font-bold tracking-[-.035em] text-slate-950">{formatMoney(product.price)}</span>
             <span className="max-w-[48%] truncate text-right text-[11px] font-medium text-slate-500">{product.seller_name}</span>
@@ -66,6 +59,9 @@ export default function ProductsPage() {
   const [minimumInput, setMinimumInput] = useState(searchParams.get("min_price") || "");
   const [maximumInput, setMaximumInput] = useState(searchParams.get("max_price") || "");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [catalogue, setCatalogue] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
@@ -74,17 +70,26 @@ export default function ProductsPage() {
   const query = searchParams.get("search") || "";
   const sort = searchParams.get("sort") || "recommended";
   const availability = searchParams.get("availability") || "";
-  const minimumRating = Number(searchParams.get("min_rating")) || 0;
+  const minimumRating = 0;
   const brand = searchParams.get("brand") || "";
   const priceMultiplier = readPreferredCurrency() === "USD" && readZmwPerUsdRate() > 0 ? readZmwPerUsdRate() : 1;
   const minimum = (Number(searchParams.get("min_price")) || 0) * priceMultiplier;
   const rawMaximum = Number(searchParams.get("max_price")) || Infinity;
   const maximum = rawMaximum === Infinity ? Infinity : rawMaximum * priceMultiplier;
-  const catalogue = useMemo(() => [
-    ...previewProducts,
-    ...(isPreviewAuth ? readAllPreviewSellerProducts().filter((product) => product.is_active !== false && product.is_approved === true) : []),
-  ], []);
-  const categoryOptions = useMemo(() => readAdminPreviewCategories(categories).filter((item) => item.is_active !== false), []);
+  const categoryOptions = categories;
+
+  useEffect(() => {
+    let active = true;
+    api.get("/products/").then((response) => {
+      const body = response.data;
+      if (active) setCatalogue(body.results?.results || body.results || []);
+    }).catch(() => {
+      if (active) setLoadError(true);
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     setSearchInput(query);
@@ -110,7 +115,6 @@ export default function ProductsPage() {
         && (!condition || product.condition === condition)
         && (!availability || (availability === "in-stock" ? Number(product.stock) > 0 : Number(product.stock) <= 0))
         && (!brand || String(product.brand || "").toLowerCase().includes(brand.toLowerCase()))
-        && (!minimumRating || (() => { const reviews = readPreviewReviews(product.id); const rating = reviews.length ? reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length : Number(product.rating || 0); return rating >= minimumRating; })())
         && product.price >= minimum
         && product.price <= maximum;
     });
@@ -146,9 +150,9 @@ export default function ProductsPage() {
           <PremiumBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Marketplace" }]} />
           <div className="mt-5 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
             <div>
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.12em] text-amber-700"><Sparkles size={12} /> Marketplace preview</div>
+              <div className="text-xs font-bold uppercase text-amber-700">Campus marketplace</div>
               <h1 className="mt-3 text-3xl font-semibold tracking-[-.055em] text-slate-950 sm:text-[40px]">Find your next good thing.</h1>
-              <p className="mt-2 text-sm text-slate-500">Explore sample listings from around the Mulungushi University community.</p>
+              <p className="mt-2 text-sm text-slate-500">Browse current listings from your campus community.</p>
             </div>
             <form onSubmit={submitSearch} role="search" className="relative w-full lg:max-w-[390px]">
               <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
@@ -192,8 +196,8 @@ export default function ProductsPage() {
                 </div>
               </fieldset>
               <fieldset>
-                <legend className="mb-2 text-xs font-bold text-slate-700">Availability & rating</legend>
-                <div className="grid grid-cols-2 gap-2"><select aria-label="Availability" value={availability} onChange={(event) => updateParams({ availability: event.target.value })} className="h-10 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700"><option value="">All stock</option><option value="in-stock">Available</option><option value="out-of-stock">Out of stock</option></select><select aria-label="Minimum rating" value={minimumRating || ""} onChange={(event) => updateParams({ min_rating: event.target.value })} className="h-10 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700"><option value="">Any rating</option><option value="4">4+ stars</option><option value="3">3+ stars</option></select></div>
+                <legend className="mb-2 text-xs font-bold text-slate-700">Availability</legend>
+                <select aria-label="Availability" value={availability} onChange={(event) => updateParams({ availability: event.target.value })} className="h-10 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700"><option value="">All stock</option><option value="in-stock">Available</option><option value="out-of-stock">Out of stock</option></select>
               </fieldset>
               <label className="block text-xs font-bold text-slate-700">Brand<input value={brand} onChange={(event) => updateParams({ brand: event.target.value })} placeholder="Any brand" className="mt-2 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm font-normal outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10" /></label>
               <fieldset>
@@ -212,7 +216,9 @@ export default function ProductsPage() {
           </section>
         )}
 
-        {products.length > 0 ? (
+        {loading ? <p className="mt-8 text-center text-sm text-slate-500">Loading listings…</p> : loadError ? (
+          <div role="alert" className="mt-8 rounded-xl border border-rose-200 bg-rose-50 p-5 text-center text-sm text-rose-800">Listings could not be loaded from the server. Please try again later.</div>
+        ) : products.length > 0 ? (
           <div className="mt-6 grid grid-cols-2 gap-3 sm:mt-7 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {pageProducts.map((product) => <PreviewProductCard key={product.id} product={product} />)}
           </div>
@@ -220,13 +226,13 @@ export default function ProductsPage() {
           <div className="mt-8 rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-16 text-center">
             <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-500"><Search size={20} /></span>
             <h2 className="mt-4 text-lg font-semibold tracking-tight text-slate-900">No listings match those filters</h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">Try another search or clear the filters to explore all preview listings.</p>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">Try another search or clear the filters to browse all available listings.</p>
             <button type="button" onClick={clearFilters} className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-slate-950 px-4 text-xs font-bold text-white transition hover:bg-slate-800">Clear filters <ArrowRight size={14} /></button>
           </div>
         )}
 
         {pageCount > 1 && <nav aria-label="Product pages" className="mt-8 flex flex-wrap items-center justify-center gap-2"><button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1} className="inline-flex h-10 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"><ArrowLeft size={14} /> Previous</button><span aria-live="polite" className="px-2 text-xs font-medium text-slate-600">Page {page} of {pageCount}</span><button type="button" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={page === pageCount} className="inline-flex h-10 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40">Next <ArrowRight size={14} /></button></nav>}
-        <p className="mt-8 flex items-center justify-center gap-2 text-center text-[11px] text-slate-400"><Filter size={13} /> Preview catalog · Listings and seller details are sample content until backend connection.</p>
+        <p className="mt-8 flex items-center justify-center gap-2 text-center text-[11px] text-slate-400"><Filter size={13} /> Listings are supplied by the campus marketplace.</p>
       </div>
     </div>
   );

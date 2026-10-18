@@ -1,10 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, BookOpen, Heart, Laptop, Shirt, Utensils } from "lucide-react";
 import { Link } from "react-router-dom";
-import { previewProducts, getCategoryLabel, getConditionLabel } from "../data/previewProducts";
-import { isPreviewAuth } from "../services/auth";
-import { readAllPreviewSellerProducts } from "../services/previewSellerData";
-import { readPreviewWishlist, writePreviewWishlist } from "../services/previewWishlist";
+import { getCategoryLabel, getConditionLabel } from "../data/previewProducts";
+import { useAuth } from "../contexts/AuthContext";
+import api from "../services/api";
 import { getProductPrimaryImage } from "../utils/productImages";
 import { formatMoney } from "../services/currency";
 import toast from "react-hot-toast";
@@ -17,18 +16,37 @@ const categories = [
 ];
 
 function FeaturedProductCard({ product }) {
-  const [saved, setSaved] = useState(() => readPreviewWishlist().includes(product.id));
-  const toggleSaved = () => {
-    const current = readPreviewWishlist();
-    writePreviewWishlist(saved ? current.filter((id) => id !== product.id) : [...current, product.id]);
-    setSaved(!saved);
-    toast.success(saved ? "Removed from wishlist" : "Saved to wishlist");
+  const { isAuthenticated } = useAuth();
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    api.get(`/wishlist/check/${product.id}/`).then((response) => setSaved(response.data.in_wishlist)).catch(() => {});
+  }, [isAuthenticated, product.id]);
+  const toggleSaved = async () => {
+    if (!isAuthenticated) {
+      toast.error("Sign in to save products");
+      return;
+    }
+    try {
+      if (saved) await api.delete("/wishlist/remove/", { data: { product_id: product.id } });
+      else await api.post("/wishlist/add/", { product_id: product.id });
+      setSaved(!saved);
+      toast.success(saved ? "Removed from wishlist" : "Saved to wishlist");
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Could not update wishlist");
+    }
   };
   return <article className="group overflow-hidden rounded-xl border border-slate-200 bg-white transition-colors hover:border-amber-300"><div className="relative aspect-[1.5/1] overflow-hidden bg-slate-100"><Link to={`/products/${product.id}`} aria-label={`View ${product.name}`}><img src={getProductPrimaryImage(product)} alt={product.name} loading="lazy" className="h-full w-full object-cover" /></Link><span className="absolute left-3 top-3 rounded-md bg-white/95 px-2 py-1 text-[10px] font-semibold text-slate-700">{getConditionLabel(product.condition)}</span><button type="button" onClick={toggleSaved} aria-label={saved ? `Remove ${product.name} from wishlist` : `Save ${product.name} to wishlist`} aria-pressed={saved} className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-lg bg-white/95 text-slate-600 hover:text-rose-600"><Heart size={16} fill={saved ? "currentColor" : "none"} /></button></div><div className="p-4"><p className="text-[10px] font-semibold uppercase tracking-[.1em] text-slate-500">{getCategoryLabel(product.category)}</p><Link to={`/products/${product.id}`} className="mt-1.5 block min-h-10 text-sm font-semibold leading-5 text-slate-900 hover:text-amber-700">{product.name}</Link><p className="mt-1 text-[11px] text-slate-500">{product.seller_name || "Campus seller"}</p><div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3"><span className="font-bold text-slate-950">{formatMoney(product.price)}</span><span className={`text-[10px] font-semibold ${Number(product.stock) > 0 ? "text-emerald-700" : "text-rose-700"}`}>{Number(product.stock) > 0 ? "In stock" : "Unavailable"}</span></div></div></article>;
 }
 
 export default function LandingPage() {
-  const catalogue = useMemo(() => [...previewProducts, ...(isPreviewAuth ? readAllPreviewSellerProducts().filter((product) => product.is_active !== false && product.is_approved === true) : [])].filter((product) => product.is_active !== false && product.is_approved !== false), []);
+  const [catalogue, setCatalogue] = useState([]);
+  useEffect(() => {
+    api.get("/products/").then((response) => {
+      const body = response.data;
+      setCatalogue(body.results?.results || body.results || []);
+    }).catch(() => setCatalogue([]));
+  }, []);
   const featuredProducts = catalogue.filter((product) => Number(product.stock) > 0).slice(0, 4);
   const recentlyAdded = catalogue.map((product, index) => ({ product, index, createdAt: new Date(product.created_at || product.createdAt || 0).getTime() })).filter(({ product }) => Number(product.stock) > 0).sort((a, b) => (b.createdAt - a.createdAt) || (b.index - a.index)).slice(0, 4).map(({ product }) => product);
   return (

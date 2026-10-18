@@ -31,10 +31,11 @@ urlpatterns = [
     path('api/products/', include('apps.products.urls')),
     path('api/orders/', include('apps.orders.urls')),
     path('api/cart/', include('apps.cart.urls')),
+    path('api/wishlist/', include('apps.wishlist.urls')),
+    path('api/reviews/', include('apps.reviews.urls')),
     path('api/payments/', include('apps.payments.urls')),
     path('api/chat/', include('apps.chat.urls')),
     path('api/analytics/', include('apps.analytics.urls')),
-    # path('api/reviews/', include('reviews.urls')),  # Commented out - not implemented yet
 ]
 
 if settings.DEBUG:

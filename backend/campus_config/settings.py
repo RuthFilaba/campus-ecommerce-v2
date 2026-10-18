@@ -26,12 +26,13 @@ INSTALLED_APPS = [
     'apps.users',
     'apps.products',
     'apps.cart',
+    'apps.wishlist',
     'apps.orders',
     'apps.payments',
+    'apps.reviews',
     'apps.chat',
     'apps.analytics',
     'channels',
-    # 'reviews',  # Remove or comment out
 ]
 
 

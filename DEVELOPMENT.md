@@ -26,6 +26,8 @@ The frontend's REST API defaults to `http://127.0.0.1:8000/api`. To override it,
 VITE_API_URL=http://127.0.0.1:8000/api
 ```
 
+Authentication always uses the Django API. Production deployments must set `VITE_API_URL` to the public HTTPS backend origin ending in `/api` in the frontend hosting provider's build environment. Replace the example value in `frontend/.env.production`; loopback addresses such as `127.0.0.1` refer to the visitor's own device and will not reach the deployed backend. The deployed Django service must allow the frontend origin through CORS.
+
 ## Backend
 
 Create and activate a virtual environment from the repository root, then install the pinned dependencies:

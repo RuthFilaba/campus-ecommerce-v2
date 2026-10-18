@@ -1,50 +1,18 @@
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSpinner, faCheckCircle, faTimes, faMoneyBill, faMobile, faUniversity } from "@fortawesome/free-solid-svg-icons";
+import { faSpinner, faCheckCircle, faTimes, faMoneyBill } from "@fortawesome/free-solid-svg-icons";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 
 const PaymentConfirmationModal = ({ isOpen, onClose, order, payment, onConfirm }) => {
   const [loading, setLoading] = useState(false);
-  const [confirmationCode, setConfirmationCode] = useState("");
-
   if (!isOpen) return null;
 
   const handleConfirm = async () => {
     setLoading(true);
     try {
-      if (payment.payment_method === "cash") {
-        // Seller confirms cash payment
-        await api.post(`/orders/${order.id}/update-status/`, {
-          status: "completed",
-          notes: "Cash payment confirmed by seller during meetup"
-        });
-        toast.success("Cash payment confirmed! Order completed.");
-      } else if (payment.payment_method.includes("momo") || payment.payment_method.includes("money")) {
-        // Admin or system verifies mobile money
-        if (!confirmationCode) {
-          toast.error("Please enter the transaction confirmation code");
-          setLoading(false);
-          return;
-        }
-        await api.post(`/payments/${payment.id}/verify/`, {
-          transaction_code: confirmationCode,
-          status: "completed"
-        });
-        toast.success("Mobile money payment verified!");
-      } else if (payment.payment_method === "bank_transfer") {
-        // Admin verifies bank transfer
-        if (!confirmationCode) {
-          toast.error("Please enter the bank transaction reference");
-          setLoading(false);
-          return;
-        }
-        await api.post(`/payments/${payment.id}/verify/`, {
-          transaction_reference: confirmationCode,
-          status: "completed"
-        });
-        toast.success("Bank transfer payment verified!");
-      }
+      await api.post(`/payments/${payment.id}/confirm/`);
+      toast.success("Cash payment confirmed.");
       
       onConfirm();
       onClose();
@@ -54,12 +22,6 @@ const PaymentConfirmationModal = ({ isOpen, onClose, order, payment, onConfirm }
     } finally {
       setLoading(false);
     }
-  };
-
-  const getPaymentIcon = () => {
-    if (payment.payment_method === "cash") return faMoneyBill;
-    if (payment.payment_method.includes("momo") || payment.payment_method.includes("money")) return faMobile;
-    return faUniversity;
   };
 
   return (
@@ -74,38 +36,18 @@ const PaymentConfirmationModal = ({ isOpen, onClose, order, payment, onConfirm }
 
         <div className="text-center mb-4">
           <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <FontAwesomeIcon icon={getPaymentIcon()} className="text-2xl text-amber-500" />
+            <FontAwesomeIcon icon={faMoneyBill} className="text-2xl text-amber-500" />
           </div>
           <p className="text-gray-600">Payment Method: <strong>{payment.payment_method_display}</strong></p>
           <p className="text-gray-600">Amount: <strong className="text-amber-600">K{payment.amount}</strong></p>
           <p className="text-gray-500 text-sm mt-2">Transaction Reference: <span className="font-mono">{payment.transaction_reference}</span></p>
         </div>
 
-        {(payment.payment_method.includes("momo") || payment.payment_method.includes("money") || payment.payment_method === "bank_transfer") && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">
-              {payment.payment_method.includes("momo") ? "Mobile Money Confirmation Code" : "Bank Transaction Reference"}
-            </label>
-            <input
-              type="text"
-              value={confirmationCode}
-              onChange={(e) => setConfirmationCode(e.target.value)}
-              placeholder={payment.payment_method.includes("momo") ? "Enter confirmation code from SMS" : "Enter bank transaction reference"}
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-amber-500"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              {payment.payment_method.includes("momo") 
-                ? "Enter the confirmation code received via SMS after sending money"
-                : "Enter the reference number from your bank transfer"}
-            </p>
-          </div>
-        )}
-
         {payment.payment_method === "cash" && (
           <div className="mb-4 p-3 bg-green-50 rounded-lg">
             <p className="text-sm text-green-700">
               <FontAwesomeIcon icon={faCheckCircle} className="mr-1" />
-              By confirming, you verify that you have received K{payment.amount} in cash from the buyer.
+              Confirm only after you have paid K{payment.amount} to the seller.
             </p>
           </div>
         )}

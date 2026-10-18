@@ -1,22 +1,38 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Heart, Trash2 } from "lucide-react";
-import { getCategoryLabel, getConditionLabel, previewProducts } from "../../data/previewProducts";
-import { readPreviewWishlist, writePreviewWishlist } from "../../services/previewWishlist";
+import { getCategoryLabel, getConditionLabel } from "../../data/previewProducts";
+import api from "../../services/api";
 import PremiumBreadcrumb from "../../components/common/PremiumBreadcrumb";
-import { readAllPreviewSellerProducts } from "../../services/previewSellerData";
 import { getProductPrimaryImage } from "../../utils/productImages";
 import { formatMoney } from "../../services/currency";
 
 export default function WishlistPage() {
-  const [savedIds, setSavedIds] = useState(() => readPreviewWishlist());
-  const catalogue = [...previewProducts, ...readAllPreviewSellerProducts().filter((product) => product.is_active !== false && product.is_approved === true)];
-  const savedProducts = savedIds.map((id) => catalogue.find((product) => String(product.id) === String(id))).filter(Boolean);
+  const [savedProducts, setSavedProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  const removeSaved = (id) => {
-    const next = savedIds.filter((item) => item !== id);
-    writePreviewWishlist(next);
-    setSavedIds(next);
+  const loadWishlist = async () => {
+    try {
+      const response = await api.get("/wishlist/");
+      setSavedProducts((response.data.items || []).map((item) => item.product_details));
+      setError(false);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadWishlist(); }, []);
+
+  const removeSaved = async (id) => {
+    try {
+      await api.delete("/wishlist/remove/", { data: { product_id: id } });
+      setSavedProducts((current) => current.filter((product) => product.id !== id));
+    } catch {
+      setError(true);
+    }
   };
 
   return (
@@ -25,7 +41,7 @@ export default function WishlistPage() {
         <PremiumBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Saved items" }]} />
         <div className="mt-5 flex items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.15em] text-amber-700">Keep the good ones close</p><h1 className="mt-1 text-3xl font-semibold tracking-[-.05em] text-slate-950">Your wishlist<span className="ml-2 align-middle text-base font-medium tracking-normal text-slate-400">({savedProducts.length})</span></h1></div><Heart size={23} className="mb-1 text-rose-500" /></div>
 
-        {savedProducts.length ? (
+        {loading ? <p className="mt-8 text-center text-sm text-slate-500">Loading saved items…</p> : error ? <p role="alert" className="mt-8 rounded-xl border border-rose-200 bg-rose-50 p-5 text-center text-sm text-rose-800">Your wishlist could not be loaded. Please try again.</p> : savedProducts.length ? (
           <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
             {savedProducts.map((product) => (
               <article key={product.id} className="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white transition hover:-translate-y-1 hover:shadow-[0_18px_42px_rgba(15,23,42,.08)]">
@@ -42,7 +58,6 @@ export default function WishlistPage() {
             <Link to="/products" className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-slate-950 px-4 text-xs font-bold text-white transition hover:bg-slate-800">Explore listings <ArrowRight size={14} /></Link>
           </div>
         )}
-        <p className="mt-6 text-center text-[11px] text-slate-400">Preview wishlist · Saved items stay on this device.</p>
       </div>
     </div>
   );

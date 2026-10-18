@@ -100,7 +100,7 @@ export default function OrdersPage() {
           <section className="mt-7 rounded-2xl border border-slate-200/80 bg-white px-5 py-14 text-center sm:py-16">
             <span className="mx-auto grid h-16 w-16 place-items-center rounded-[22px] bg-amber-50 text-amber-700"><ShoppingBag size={25} /></span>
             <h2 className="mt-5 text-xl font-semibold tracking-tight text-slate-950">No orders yet</h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">When you place a preview order, it will appear here with its items and meetup details.</p>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">When you place an order, it will appear here with its items and meetup details.</p>
             <Link to="/products" className="mt-6 inline-flex h-11 items-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-bold text-white transition hover:bg-slate-800">Browse listings <ArrowRight size={15} /></Link>
           </section>
         ) : visibleOrders.length === 0 ? <section className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-12 text-center"><h2 className="font-semibold text-slate-900">No orders match</h2><p className="mt-2 text-sm text-slate-500">Try another search or choose a different status.</p><button type="button" onClick={() => { setOrderSearch(""); setStatusFilter("all"); }} className="mt-4 text-sm font-semibold text-amber-800">Clear search and filters</button></section> : (

@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-// Use environment variable or fallback to localhost
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8000/api' : '');
+
+if (!API_URL) {
+  throw new Error('VITE_API_URL must be set to the deployed backend API URL.');
+}
 
 console.log('API Base URL:', API_URL);
 

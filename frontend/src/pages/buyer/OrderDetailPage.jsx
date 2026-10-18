@@ -47,33 +47,8 @@ const OrderDetailPage = () => {
     fetchOrderDetails();
   }, [id]);
 
-  useEffect(() => {
-    const refreshPreviewOrder = () => {
-      if (id && readPreviewOrders().some((item) => item.id === id)) fetchOrderDetails();
-    };
-    window.addEventListener("campusecom:preview-orders-change", refreshPreviewOrder);
-    window.addEventListener("storage", refreshPreviewOrder);
-    return () => {
-      window.removeEventListener("campusecom:preview-orders-change", refreshPreviewOrder);
-      window.removeEventListener("storage", refreshPreviewOrder);
-    };
-  }, [id, user?.email]);
-
   const fetchOrderDetails = async () => {
     setLoading(true);
-    const previewOrder = readPreviewOrders().find((item) => item.id === id);
-    if (previewOrder) {
-      if (previewOrder.buyerEmail?.toLowerCase() !== user?.email?.toLowerCase()) {
-        toast.error("That order is not available to this account.");
-        navigate("/orders", { replace: true });
-        setLoading(false);
-        return;
-      }
-      setOrder({ ...previewOrder, isPreview: true });
-      setOrderHistory(Object.values(previewOrder.sellerTracking || {}).flatMap((tracking) => tracking.events || []));
-      setLoading(false);
-      return;
-    }
     try {
       const response = await api.get(`/orders/${id}/`);
       console.log("Order details:", response.data);
@@ -196,8 +171,7 @@ const OrderDetailPage = () => {
   const isAdmin = user?.role === "admin";
   
   // Payment confirmation conditions
-  const canConfirmPayment = (isSeller && payment?.payment_method === "cash" && order.status !== "completed") ||
-                           (isAdmin && payment?.status === "pending" && payment?.payment_method !== "cash");
+  const canConfirmPayment = isBuyer && payment?.payment_method === "cash" && payment?.status === "pending";
   
   const canMarkReady = isSeller && order.status === "processing";
   const canConfirmOrder = isSeller && order.status === "pending";

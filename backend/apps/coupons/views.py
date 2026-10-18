@@ -12,7 +12,9 @@ from apps.cart.models import Cart
 
 class IsSellerOrAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role in ['seller', 'admin']
+        if not request.user.is_authenticated:
+            return False
+        return request.user.role == 'admin' or request.user.can_sell()
 
 
 class ApplyCouponView(APIView):

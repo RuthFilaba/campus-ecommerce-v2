@@ -31,6 +31,8 @@ static/
 campus_config/__pycache__/
 */__pycache__/
 **/migrations/*.py
+!backend/apps/reviews/migrations/0001_initial.py
+!backend/apps/wishlist/migrations/0001_initial.py
 !**/migrations/__init__.py
 
 # Frontend

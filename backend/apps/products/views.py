@@ -17,7 +17,9 @@ import base64
 
 class IsSellerOrAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role in ['seller', 'admin']
+        if not request.user.is_authenticated:
+            return False
+        return request.user.role == 'admin' or request.user.can_sell()
 
 class ProductListView(generics.ListAPIView):
     serializer_class = ProductSerializer
@@ -107,7 +109,7 @@ class ProductCreateView(generics.CreateAPIView):
         }, status=status.HTTP_201_CREATED)
 
 class ProductDetailView(generics.RetrieveAPIView):
-    queryset = Product.objects.filter(is_active=True)
+    queryset = Product.objects.filter(is_active=True, is_approved=True)
     serializer_class = ProductSerializer
     permission_classes = [permissions.AllowAny]
     
