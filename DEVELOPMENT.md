@@ -6,7 +6,7 @@
 - Node.js 18 or newer, with npm
 - Git (if you are cloning the repository)
 
-The backend uses SQLite by default, so a separate database server is not needed for local development.
+The backend uses PostgreSQL. Install and start PostgreSQL before running Django, then create a database and role for the project.
 
 ## Frontend
 
@@ -45,9 +45,29 @@ Apply database migrations and start Django:
 
 ```sh
 cd backend
+cp .env.example .env
+# Edit .env with the PostgreSQL credentials for your machine.
+psql -U postgres -c "CREATE USER campus_ecommerce WITH PASSWORD 'change-me';"
+psql -U postgres -c "CREATE DATABASE campus_ecommerce OWNER campus_ecommerce;"
+```
+
+Then apply migrations and start Django:
+
+```sh
+cd backend
 python manage.py migrate
 python manage.py runserver
 ```
+
+The Django settings read `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` from `backend/.env` or the process environment. In production, set these variables in the hosting provider's secret/configuration settings. Switching to PostgreSQL does not copy data from the old SQLite database; export/import existing records separately if they need to be retained.
+
+To populate a development database with demo accounts, run after migrations:
+
+```sh
+python manage.py seed_demo_users
+```
+
+This creates three buyers, three verified sellers, and a Django admin account. Their shared default password is `CampusDemo2026!`; override it with `DEMO_USER_PASSWORD` before running the command. Existing demo passwords are left unchanged unless you pass `--reset-password`. The command refuses to run when `DEBUG=False`; never use demo credentials in a deployed environment.
 
 The API is then available at <http://127.0.0.1:8000>. Create an admin account if needed with `python manage.py createsuperuser` from the `backend` directory.
 

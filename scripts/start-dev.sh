@@ -14,6 +14,31 @@ if [[ ! -d "$repo_root/frontend/node_modules" ]]; then
   exit 1
 fi
 
+db_check_output="$(
+  cd "$repo_root/backend"
+  "$venv_python" -c '
+import os
+import sys
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "campus_config.settings")
+import django
+django.setup()
+
+from django.db import connection
+
+try:
+    connection.ensure_connection()
+except Exception as error:
+    print(f"PostgreSQL connection failed: {error}", file=sys.stderr)
+    sys.exit(1)
+connection.close()
+' 2>&1
+)" || {
+  echo "Cannot connect to the configured PostgreSQL database. Start PostgreSQL and check DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, and DB_PORT in backend/.env." >&2
+  echo "$db_check_output" >&2
+  exit 1
+}
+
 backend_pid=""
 frontend_pid=""
 

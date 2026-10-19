@@ -5,8 +5,10 @@ Django settings for campus_ecommerce project.
 from pathlib import Path
 from datetime import timedelta
 import os
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 SECRET_KEY = 'django-insecure-campus-ecommerce-key-2026'
 DEBUG = True
 ALLOWED_HOSTS = ['*']
@@ -80,8 +82,12 @@ WSGI_APPLICATION = 'campus_config.wsgi.application'
 # Database
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'campus_ecommerce'),
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 
