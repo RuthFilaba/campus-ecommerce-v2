@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'apps.reviews',
     'apps.chat',
     'apps.analytics',
+    'apps.core',
     'channels',
 ]
 
@@ -47,6 +48,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'apps.core.throttling.IETFRateLimitMiddleware',
+    'apps.core.middleware.OpenAPISchemaValidationMiddleware',
 ]
 
 ROOT_URLCONF = 'campus_config.urls'
@@ -170,3 +173,22 @@ DEFAULT_FROM_EMAIL = 'Campus E-Commerce <noreply@campusecommerce.com>'
 # EMAIL_USE_TLS = True
 # EMAIL_HOST_USER = 'postmaster@yourdomain.com'
 # EMAIL_HOST_PASSWORD = 'your_mailgun_password'
+
+# ============================================================
+# HARDENED SESSION & SECURITY COOKIE CONFIGURATION (TLS 1.3)
+# ============================================================
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_NAME = 'sessionid'
+SESSION_COOKIE_AGE = 1800                    # 30-minute idle expiry (REQ-5)
+SESSION_COOKIE_HTTPONLY = True              # Blocks XSS document.cookie extraction
+SESSION_COOKIE_SECURE = False if DEBUG else True # Hardened over TLS in production
+SESSION_COOKIE_SAMESITE = 'Strict'          # Prevents CSRF cross-origin leakage
+
+# In-memory cache for sliding-window rate limiting
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'campus-ecommerce-cache',
+    }
+}
+

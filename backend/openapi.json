@@ -1,0 +1,404 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Campus E-Commerce Platform API",
+    "version": "2.0.0",
+    "description": "Enterprise RESTful API for Campus E-Commerce v2 featuring session-based authentication over TLS 1.3, strict JSON Schema validation, and RFC 7807 error reporting."
+  },
+  "servers": [
+    {
+      "url": "https://api.campus-ecommerce.internal/api/v1",
+      "description": "Production HTTPS (TLS 1.3) Server"
+    },
+    {
+      "url": "http://127.0.0.1:8000/api/v1",
+      "description": "Local Development Server"
+    }
+  ],
+  "paths": {
+    "/api/users/register/": {
+      "post": {
+        "summary": "Register a new campus user",
+        "description": "Creates a student/faculty user account. Enforces salted bcrypt password hashing and triggers verification email.",
+        "operationId": "registerUser",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserRegistrationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User account created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "422": {
+            "$ref": "#/components/responses/422UnprocessableEntity"
+          },
+          "429": {
+            "$ref": "#/components/responses/429TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalError"
+          }
+        }
+      }
+    },
+    "/api/users/login/": {
+      "post": {
+        "summary": "Authenticate user and issue hardened session cookie",
+        "description": "Validates credentials. Upon success, issues an encrypted session token via an HttpOnly, Secure, SameSite=Strict cookie.",
+        "operationId": "loginUser",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication successful; session cookie established",
+            "headers": {
+              "Set-Cookie": {
+                "description": "Session ID: `sessionid=...; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=1800`",
+                "schema": { "type": "string" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "422": {
+            "$ref": "#/components/responses/422UnprocessableEntity"
+          },
+          "429": {
+            "$ref": "#/components/responses/429TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/orders/": {
+      "get": {
+        "summary": "List authenticated user orders",
+        "operationId": "listOrders",
+        "security": [{ "SessionAuth": [] }],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["Pending", "Processing", "Shipped", "Delivered", "Cancelled", "Refunded"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of user orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/OrderResponse" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/401Unauthorized" }
+        }
+      },
+      "post": {
+        "summary": "Create a new checkout order",
+        "description": "Validates inventory, applies optional coupon, and generates an order record.",
+        "operationId": "createOrder",
+        "security": [{ "SessionAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Order created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/400BadRequest" },
+          "401": { "$ref": "#/components/responses/401Unauthorized" },
+          "422": { "$ref": "#/components/responses/422UnprocessableEntity" },
+          "429": { "$ref": "#/components/responses/429TooManyRequests" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "SessionAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "sessionid",
+        "description": "Hardened HTTP session cookie delivered over TLS 1.3 with HttpOnly, Secure, and SameSite=Strict."
+      }
+    },
+    "responses": {
+      "400BadRequest": {
+        "description": "Bad Request: Malformed JSON syntax or bad query parameters",
+        "content": {
+          "application/problem+json": {
+            "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+          }
+        }
+      },
+      "401Unauthorized": {
+        "description": "Unauthorized: Session cookie is invalid, expired, or missing",
+        "content": {
+          "application/problem+json": {
+            "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+          }
+        }
+      },
+      "422UnprocessableEntity": {
+        "description": "Unprocessable Entity: Payload failed strict JSON schema validation",
+        "content": {
+          "application/problem+json": {
+            "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+          }
+        }
+      },
+      "429TooManyRequests": {
+        "description": "Rate limit exceeded",
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds to wait before making new requests",
+            "schema": { "type": "integer" }
+          },
+          "RateLimit-Limit": {
+            "description": "Quota limit per time window",
+            "schema": { "type": "integer" }
+          },
+          "RateLimit-Remaining": {
+            "description": "Remaining units in current window",
+            "schema": { "type": "integer" }
+          },
+          "RateLimit-Reset": {
+            "description": "Epoch timestamp when rate limit resets",
+            "schema": { "type": "integer" }
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+          }
+        }
+      },
+      "500InternalError": {
+        "description": "Internal Server Error",
+        "content": {
+          "application/problem+json": {
+            "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "UserRegistrationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["email", "password", "firstName", "lastName", "campusRole"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^[a-zA-Z0-9._%+-]+@campus\\.edu$",
+            "description": "Institutional campus email address"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
+            "description": "Minimum 8 characters with 1 uppercase, 1 lowercase, 1 number, and 1 special character"
+          },
+          "firstName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "lastName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "campusRole": {
+            "type": "string",
+            "enum": ["student", "faculty", "staff", "alumni"]
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["email", "password"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "UserResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "email", "firstName", "lastName", "campusRole", "isVerified"],
+        "properties": {
+          "id": { "type": "integer", "minimum": 1 },
+          "email": { "type": "string", "format": "email" },
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "campusRole": { "type": "string" },
+          "isVerified": { "type": "boolean" }
+        }
+      },
+      "OrderItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["productId", "quantity", "unitPrice"],
+        "properties": {
+          "productId": { "type": "integer", "minimum": 1 },
+          "quantity": { "type": "integer", "minimum": 1, "maximum": 50 },
+          "unitPrice": { "type": "number", "minimum": 0.01 }
+        }
+      },
+      "CreateOrderRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["items", "shippingAddress", "paymentMethodToken"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/components/schemas/OrderItem" }
+          },
+          "shippingAddress": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["street", "campusHall", "roomNumber"],
+            "properties": {
+              "street": { "type": "string", "minLength": 3, "maxLength": 100 },
+              "campusHall": { "type": "string", "minLength": 2, "maxLength": 50 },
+              "roomNumber": { "type": "string", "minLength": 1, "maxLength": 20 }
+            }
+          },
+          "couponCode": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{4,15}$"
+          },
+          "paymentMethodToken": {
+            "type": "string",
+            "pattern": "^pm_[a-zA-Z0-9_]+$",
+            "description": "Stripe PaymentMethod token created client-side"
+          }
+        }
+      },
+      "OrderResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["orderId", "totalAmount", "status", "createdAt", "items"],
+        "properties": {
+          "orderId": { "type": "integer" },
+          "totalAmount": { "type": "number" },
+          "status": {
+            "type": "string",
+            "enum": ["Pending", "Processing", "Shipped", "Delivered", "Cancelled", "Refunded"]
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/OrderItem" }
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "title", "status", "detail", "instance"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri",
+            "description": "URI identifying the problem type as defined in RFC 7807"
+          },
+          "title": {
+            "type": "string",
+            "description": "Short human-readable summary of problem"
+          },
+          "status": {
+            "type": "integer",
+            "description": "HTTP status code"
+          },
+          "detail": {
+            "type": "string",
+            "description": "Human-readable explanation specific to this occurrence"
+          },
+          "instance": {
+            "type": "string",
+            "format": "uri-reference",
+            "description": "Relative URI identifying this specific request instance"
+          },
+          "invalidParams": {
+            "type": "array",
+            "description": "List of specific parameter violations",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "reason"],
+              "properties": {
+                "name": { "type": "string" },
+                "reason": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

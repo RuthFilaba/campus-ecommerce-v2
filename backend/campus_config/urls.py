@@ -5,6 +5,7 @@ from django.conf.urls.static import static
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from campus_config.docs_views import SwaggerUIDocsView, OpenAPISpecView
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -13,6 +14,8 @@ def api_root(request):
         'message': 'Welcome to Campus E-Commerce API',
         'version': '1.0.0',
         'endpoints': {
+            'Documentation': '/api-docs/',
+            'OpenAPI Spec': '/api-docs/openapi.json',
             'Authentication': '/api/users/',
             'Products': '/api/products/',
             'Cart': '/api/cart/',
@@ -26,6 +29,8 @@ def api_root(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api-docs/', SwaggerUIDocsView.as_view(), name='api-docs'),
+    path('api-docs/openapi.json', OpenAPISpecView.as_view(), name='openapi-spec'),
     path('api/', api_root, name='api-root'),
     path('api/users/', include('apps.users.urls')),
     path('api/products/', include('apps.products.urls')),
