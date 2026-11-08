@@ -3,6 +3,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.models import Q
+from datetime import timedelta
+from django.utils import timezone
+from django.conf import settings
+from django.contrib.auth import login, logout
 from .models import User
 from .serializers import (
     RegisterSerializer, UserSerializer, UpdateProfileSerializer,
@@ -54,17 +58,41 @@ class LoginView(APIView):
                 user.reset_failed_logins()
                 user.update_last_active()
                 
+                # Stateful session establishment
+                login(request, user)
+                session_age = getattr(settings, 'SESSION_COOKIE_AGE', 1800)
+                request.session.set_expiry(session_age)
+                
                 refresh = RefreshToken.for_user(user)
                 
-                return Response({
+                response = Response({
                     'success': True,
                     'message': f'Welcome back, {user.get_full_name()}!',
                     'user': UserSerializer(user).data,
+                    'session_key': request.session.session_key,
                     'tokens': {
                         'refresh': str(refresh),
                         'access': str(refresh.access_token),
                     }
                 })
+
+                # Attach hardened session cookie (HttpOnly=True, SameSite=Strict, Secure)
+                cookie_name = getattr(settings, 'SESSION_COOKIE_NAME', 'sessionid')
+                is_secure = request.is_secure() or getattr(settings, 'SESSION_COOKIE_SECURE', False)
+                samesite_setting = getattr(settings, 'SESSION_COOKIE_SAMESITE', 'Strict')
+
+                response.set_cookie(
+                    key=cookie_name,
+                    value=request.session.session_key,
+                    max_age=session_age,
+                    expires=timezone.now() + timedelta(seconds=session_age),
+                    path='/',
+                    domain=getattr(settings, 'SESSION_COOKIE_DOMAIN', None),
+                    secure=is_secure,
+                    httponly=True,
+                    samesite=samesite_setting,
+                )
+                return response
             else:
                 user.increment_failed_logins()
                 remaining = 5 - user.failed_login_attempts
@@ -74,6 +102,45 @@ class LoginView(APIView):
                 
         except User.DoesNotExist:
             return Response({'error': 'Invalid credentials'}, status=401)
+
+
+class LogoutView(APIView):
+    """
+    Explicit server-side session revocation endpoint.
+    Flushes active session record from backend store and clears client cookie.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        if hasattr(request, 'session') and request.session:
+            request.session.flush()
+        logout(request)
+
+        response = Response({
+            'success': True,
+            'message': 'Successfully logged out. Session invalidated.'
+        }, status=status.HTTP_200_OK)
+
+        cookie_name = getattr(settings, 'SESSION_COOKIE_NAME', 'sessionid')
+        is_secure = request.is_secure() or getattr(settings, 'SESSION_COOKIE_SECURE', False)
+        samesite_setting = getattr(settings, 'SESSION_COOKIE_SAMESITE', 'Strict')
+
+        response.delete_cookie(
+            key=cookie_name,
+            path='/',
+            samesite=samesite_setting
+        )
+        response.set_cookie(
+            key=cookie_name,
+            value='',
+            max_age=0,
+            expires='Thu, 01 Jan 1970 00:00:00 GMT',
+            path='/',
+            httponly=True,
+            secure=is_secure,
+            samesite=samesite_setting
+        )
+        return response
 
 class UserMeView(APIView):
     permission_classes = [permissions.IsAuthenticated]

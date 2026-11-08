@@ -101,6 +101,36 @@
         }
       }
     },
+    "/api/users/logout/": {
+      "post": {
+        "summary": "Revoke active session and expire client cookie",
+        "description": "Invalidates the active session record in the backend store and sets Set-Cookie with Max-Age=0.",
+        "operationId": "logoutUser",
+        "security": [{ "SessionAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Successfully logged out and session purged",
+            "headers": {
+              "Set-Cookie": {
+                "description": "Cleared session cookie: `sessionid=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; HttpOnly; SameSite=Strict`",
+                "schema": { "type": "string" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Successfully logged out. Session invalidated." }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/orders/": {
       "get": {
         "summary": "List authenticated user orders",

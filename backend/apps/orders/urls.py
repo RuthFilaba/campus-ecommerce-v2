@@ -6,6 +6,7 @@ from .views import (
 )
 
 urlpatterns = [
+    path('', MyOrdersView.as_view(), name='orders-root'),
     path('create/', CreateOrderView.as_view(), name='create-order'),
     path('my-orders/', MyOrdersView.as_view(), name='my-orders'),
     path('my-sales/', MySalesView.as_view(), name='my-sales'),

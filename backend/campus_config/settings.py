@@ -41,8 +41,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'apps.core.security_headers.SecurityHeadersMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'apps.core.session_middleware.SessionSecurityMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -119,6 +121,7 @@ AUTH_USER_MODEL = 'users.User'
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'apps.core.authentication.HardenedSessionAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
@@ -183,6 +186,14 @@ SESSION_COOKIE_AGE = 1800                    # 30-minute idle expiry (REQ-5)
 SESSION_COOKIE_HTTPONLY = True              # Blocks XSS document.cookie extraction
 SESSION_COOKIE_SECURE = False if DEBUG else True # Hardened over TLS in production
 SESSION_COOKIE_SAMESITE = 'Strict'          # Prevents CSRF cross-origin leakage
+
+# Transport Layer Security & HSTS Configuration (TLS 1.3 / RFC 6797)
+SECURE_HSTS_SECONDS = 31536000              # 1 year HSTS preload
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = False                 # Toggle to True in production
+HTTPS_PORT = 8443
 
 # In-memory cache for sliding-window rate limiting
 CACHES = {
