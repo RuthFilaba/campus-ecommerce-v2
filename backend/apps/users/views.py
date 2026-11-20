@@ -85,7 +85,6 @@ class LoginView(APIView):
                     key=cookie_name,
                     value=request.session.session_key,
                     max_age=session_age,
-                    expires=timezone.now() + timedelta(seconds=session_age),
                     path='/',
                     domain=getattr(settings, 'SESSION_COOKIE_DOMAIN', None),
                     secure=is_secure,

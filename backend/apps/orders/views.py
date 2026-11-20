@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db import transaction
 from .models import Order, OrderHistory
 from .serializers import (
     OrderSerializer, CreateOrderSerializer, OrderStatusUpdateSerializer, 
@@ -21,33 +22,42 @@ class CreateOrderView(APIView):
     def post(self, request):
         serializer = CreateOrderSerializer(data=request.data)
         if serializer.is_valid():
-            product = Product.objects.get(id=serializer.validated_data['product_id'])
-            
-            if product.seller == request.user:
-                return Response({'error': 'You cannot buy your own product'}, status=400)
-            
-            order = Order.objects.create(
-                buyer=request.user,
-                seller=product.seller,
-                product=product,
-                quantity=serializer.validated_data['quantity'],
-                unit_price=product.price,
-                meetup_location=serializer.validated_data.get('meetup_location', ''),
-                meetup_notes=serializer.validated_data.get('meetup_notes', '')
-            )
-            
-            product.stock -= order.quantity
-            product.save()
-            
-            OrderHistory.objects.create(
-                order=order,
-                old_status='',
-                new_status='pending',
-                changed_by=request.user,
-                notes='Order created by buyer'
-            )
-            
-            return Response(OrderSerializer(order).data, status=201)
+            with transaction.atomic():
+                try:
+                    product = Product.objects.select_for_update().get(id=serializer.validated_data['product_id'])
+                except Product.DoesNotExist:
+                    return Response({'error': 'Product not found'}, status=404)
+                
+                if product.seller == request.user:
+                    return Response({'error': 'You cannot buy your own product'}, status=400)
+                
+                quantity = serializer.validated_data['quantity']
+                if product.stock < quantity:
+                    return Response({'error': f'Insufficient stock. Only {product.stock} items available.'}, status=400)
+                
+                order = Order.objects.create(
+                    buyer=request.user,
+                    seller=product.seller,
+                    product=product,
+                    quantity=quantity,
+                    unit_price=product.price,
+                    meetup_location=serializer.validated_data.get('meetup_location', ''),
+                    meetup_notes=serializer.validated_data.get('meetup_notes', '')
+                )
+                
+                product.stock -= order.quantity
+                product.save()
+                
+                OrderHistory.objects.create(
+                    order=order,
+                    old_status='',
+                    new_status='pending',
+                    changed_by=request.user,
+                    notes='Order created by buyer'
+                )
+                
+                return Response(OrderSerializer(order).data, status=201)
+        return Response(serializer.errors, status=400)
         return Response(serializer.errors, status=400)
 
 class MyOrdersView(generics.ListAPIView):
@@ -99,31 +109,30 @@ class UpdateOrderStatusView(APIView):
             if new_status == 'completed' and order.buyer != request.user:
                 return Response({'error': 'Only buyer can confirm completion'}, status=403)
             
-            if new_status == 'cancelled':
-                if order.buyer != request.user and order.seller != request.user:
-                    return Response({'error': 'Only buyer or seller can cancel'}, status=403)
-                if order.status != 'pending':
-                    return Response({'error': 'Only pending orders can be cancelled'}, status=400)
-                order.cancelled_at = timezone.now()
-                order.cancelled_by = request.user
-                order.cancellation_reason = notes
-                order.product.stock += order.quantity
-                order.product.save()
-            
-            if new_status == 'completed':
-                order.completed_at = timezone.now()
-            
-            order.status = new_status
-            order.save()
-            
-            # Create history entry
-            OrderHistory.objects.create(
-                order=order,
-                old_status=old_status,
-                new_status=new_status,
-                changed_by=request.user,
-                notes=notes or f"Status changed from {old_status} to {new_status}"
-            )
+            with transaction.atomic():
+                order = Order.objects.select_for_update().get(pk=order.pk)
+                if new_status == 'cancelled':
+                    order.cancelled_at = timezone.now()
+                    order.cancelled_by = request.user
+                    order.cancellation_reason = notes
+                    product = Product.objects.select_for_update().get(pk=order.product_id)
+                    product.stock += order.quantity
+                    product.save(update_fields=['stock'])
+                
+                if new_status == 'completed':
+                    order.completed_at = timezone.now()
+                
+                order.status = new_status
+                order.save()
+                
+                # Create history entry
+                OrderHistory.objects.create(
+                    order=order,
+                    old_status=old_status,
+                    new_status=new_status,
+                    changed_by=request.user,
+                    notes=notes or f"Status changed from {old_status} to {new_status}"
+                )
             
             # Send email notification (REQ-17)
             try:
@@ -193,23 +202,26 @@ class CancelOrderView(APIView):
         if order.status != 'pending':
             return Response({'error': 'Only pending orders can be cancelled'}, status=400)
         
-        old_status = order.status
-        order.status = 'cancelled'
-        order.cancelled_at = timezone.now()
-        order.cancelled_by = request.user
-        order.cancellation_reason = request.data.get('reason', '')
-        order.save()
-        
-        order.product.stock += order.quantity
-        order.product.save()
-        
-        OrderHistory.objects.create(
-            order=order,
-            old_status=old_status,
-            new_status='cancelled',
-            changed_by=request.user,
-            notes=f"Order cancelled by {request.user.role}"
-        )
+        with transaction.atomic():
+            order = Order.objects.select_for_update().get(pk=order.pk)
+            old_status = order.status
+            order.status = 'cancelled'
+            order.cancelled_at = timezone.now()
+            order.cancelled_by = request.user
+            order.cancellation_reason = request.data.get('reason', '')
+            order.save()
+            
+            product = Product.objects.select_for_update().get(pk=order.product_id)
+            product.stock += order.quantity
+            product.save(update_fields=['stock'])
+            
+            OrderHistory.objects.create(
+                order=order,
+                old_status=old_status,
+                new_status='cancelled',
+                changed_by=request.user,
+                notes=f"Order cancelled by {request.user.role}"
+            )
         
         # Send cancellation email
         try:

@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db import transaction
 from apps.orders.models import Order
 from .models import Payment
 from .serializers import PaymentSerializer, CreatePaymentSerializer
@@ -112,24 +113,26 @@ class ConfirmPaymentView(APIView):
     permission_classes = [IsAuthenticated]
     
     def post(self, request, payment_id):
-        payment = get_object_or_404(Payment, id=payment_id, user=request.user)
-        
-        # Only buyer can confirm
-        if payment.user != request.user:
-            return Response({'error': 'Not authorized'}, status=403)
-        
-        # Only pending payments can be confirmed
-        if payment.status != 'pending':
-            return Response({'error': f'Payment already {payment.status}'}, status=400)
-        
-        payment.status = 'completed'
-        payment.paid_at = timezone.now()
-        payment.save()
-        
-        # Update order status
-        if payment.order.status == 'pending':
-            payment.order.status = 'processing'
-            payment.order.save(update_fields=['status', 'updated_at'])
+        with transaction.atomic():
+            payment = Payment.objects.select_for_update().get(id=payment_id, user=request.user)
+            
+            # Only buyer can confirm
+            if payment.user != request.user:
+                return Response({'error': 'Not authorized'}, status=403)
+            
+            # Only pending payments can be confirmed
+            if payment.status != 'pending':
+                return Response({'error': f'Payment already {payment.status}'}, status=400)
+            
+            payment.status = 'completed'
+            payment.paid_at = timezone.now()
+            payment.save()
+            
+            # Update order status
+            order = Order.objects.select_for_update().get(id=payment.order_id)
+            if order.status == 'pending':
+                order.status = 'processing'
+                order.save(update_fields=['status', 'updated_at'])
         
         # Send payment confirmation email (REQ-17)
         try:
