@@ -4,6 +4,13 @@ from channels.db import database_sync_to_async
 from .models import ChatThread, Message
 from apps.users.models import User
 from django.utils import timezone
+from jsonschema import Draft202012Validator
+
+FRAME_SCHEMAS = {
+    'message': {'type': 'object', 'properties': {'type': {'const': 'message'}, 'message': {'type': 'string', 'minLength': 1, 'maxLength': 2000}}, 'required': ['type', 'message'], 'additionalProperties': False},
+    'typing': {'type': 'object', 'properties': {'type': {'const': 'typing'}, 'is_typing': {'type': 'boolean'}}, 'required': ['type', 'is_typing'], 'additionalProperties': False},
+    'mark_read': {'type': 'object', 'properties': {'type': {'const': 'mark_read'}, 'message_id': {'type': 'integer', 'minimum': 1}}, 'required': ['type', 'message_id'], 'additionalProperties': False},
+}
 
 class ChatConsumer(AsyncWebsocketConsumer):
     """
@@ -36,6 +43,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
         
         await self.accept()
+
+        # Durable history is delivered after authorization and before live events.
+        await self.send(text_data=json.dumps({'type': 'history', 'messages': await self.get_recent_messages()}))
         
         # Send online status to other user
         other_user = await self.get_other_user()
@@ -76,8 +86,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
     
     async def receive(self, text_data):
         """Receive message from WebSocket"""
-        text_data_json = json.loads(text_data)
-        message_type = text_data_json.get('type', 'message')
+        try:
+            if len(text_data) > 8192:
+                raise ValueError('Frame too large')
+            text_data_json = json.loads(text_data)
+            message_type = text_data_json.get('type') if isinstance(text_data_json, dict) else None
+            schema = FRAME_SCHEMAS.get(message_type)
+            if schema is None or not Draft202012Validator(schema).is_valid(text_data_json):
+                raise ValueError('Invalid frame schema')
+        except (ValueError, TypeError, json.JSONDecodeError):
+            await self.send(text_data=json.dumps({'type': 'error', 'code': 'invalid_frame'}))
+            return
         
         if message_type == 'message':
             # Regular chat message
@@ -170,6 +189,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'username': event['username'],
         }))
     
+    @database_sync_to_async
+    def get_recent_messages(self):
+        rows = Message.objects.filter(thread_id=self.thread_id).select_related('sender').order_by('-created_at')[:50]
+        return [{'id': row.id, 'message': row.message, 'sender_id': row.sender_id,
+                 'sender_name': row.sender.get_full_name() or row.sender.email,
+                 'created_at': row.created_at.isoformat(), 'is_read': row.is_read,
+                 'is_mine': row.sender_id == self.user.id} for row in reversed(list(rows))]
+
     @database_sync_to_async
     def is_user_authorized(self):
         try:
