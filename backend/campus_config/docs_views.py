@@ -18,26 +18,28 @@ class OpenAPISpecView(View):
 class SwaggerUIDocsView(View):
     """Renders the interactive Swagger UI configured for TLS and credentials."""
     def get(self, request):
-        html_content = """<!DOCTYPE html>
+        nonce = getattr(request, 'csp_nonce', '')
+        nonce_attr = f' nonce="{nonce}"' if nonce else ''
+        html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Campus E-Commerce API Documentation</title>
   <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css" />
-  <style>
-    html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
-    *, *:before, *:after { box-sizing: inherit; }
-    body { margin: 0; background: #fafafa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    .swagger-ui .topbar { background-color: #1e3a8a; }
+  <style{nonce_attr}>
+    html {{ box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }}
+    *, *:before, *:after {{ box-sizing: inherit; }}
+    body {{ margin: 0; background: #fafafa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }}
+    .swagger-ui .topbar {{ background-color: #1e3a8a; }}
   </style>
 </head>
 <body>
   <div id="swagger-ui"></div>
-  <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
-  <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-standalone-preset.js"></script>
-  <script>
-  window.onload = function() {
-    window.ui = SwaggerUIBundle({
+  <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"{nonce_attr}></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-standalone-preset.js"{nonce_attr}></script>
+  <script{nonce_attr}>
+  window.onload = function() {{
+    window.ui = SwaggerUIBundle({{
       url: "/api-docs/openapi.json",
       dom_id: '#swagger-ui',
       deepLinking: true,
@@ -46,13 +48,13 @@ class SwaggerUIDocsView(View):
         SwaggerUIStandalonePreset
       ],
       layout: "BaseLayout",
-      requestInterceptor: function(request) {
+      requestInterceptor: function(request) {{
         // Include session credentials/cookies for all requests
         request.credentials = 'include';
         return request;
-      }
-    });
-  };
+      }}
+    }});
+  }};
   </script>
 </body>
 </html>"""

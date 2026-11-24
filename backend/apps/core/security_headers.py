@@ -1,9 +1,11 @@
+import secrets
 from django.conf import settings
 from django.http import HttpResponsePermanentRedirect
 
 class SecurityHeadersMiddleware:
     """
-    Enforces HSTS (HTTP Strict Transport Security) and defense-in-depth HTTP headers.
+    Enforces HSTS (HTTP Strict Transport Security), Content-Security-Policy (CSP Level 3),
+    and defense-in-depth HTTP security headers.
     Upgrades insecure HTTP requests to HTTPS when SSL redirect is active.
     """
     def __init__(self, get_response):
@@ -18,6 +20,10 @@ class SecurityHeadersMiddleware:
             url = f"https://{host}{port_suffix}{request.get_full_path()}"
             return HttpResponsePermanentRedirect(url)
 
+        # Generate cryptographic CSP nonce for this request
+        csp_nonce = secrets.token_urlsafe(16)
+        request.csp_nonce = csp_nonce
+
         response = self.get_response(request)
 
         # 2. HSTS Header (RFC 6797)
@@ -30,7 +36,21 @@ class SecurityHeadersMiddleware:
                 hsts_header += "; preload"
             response['Strict-Transport-Security'] = hsts_header
 
-        # 3. Content security & frame protection
+        # 3. Content-Security-Policy (CSP Level 3 with nonces)
+        csp_directives = [
+            "default-src 'self'",
+            f"script-src 'self' 'nonce-{csp_nonce}' https://unpkg.com",
+            f"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
+            "font-src 'self' https://fonts.gstatic.com data:",
+            "img-src 'self' data: https: blob: https://unpkg.com",
+            "connect-src 'self' ws: wss:",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "frame-ancestors 'none'",
+        ]
+        response['Content-Security-Policy'] = "; ".join(csp_directives)
+
+        # 4. Content security & frame protection
         response['X-Content-Type-Options'] = 'nosniff'
         response['X-Frame-Options'] = 'DENY'
         response['Referrer-Policy'] = 'strict-origin-when-cross-origin'
