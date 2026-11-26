@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: campus_ecommerce_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-campus_ecommerce}
+      POSTGRES_USER: ${DB_USER:-campus_ecommerce}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_dev_password}
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-campus_ecommerce} -d ${DB_NAME:-campus_ecommerce}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: campus_ecommerce_backend
+    restart: unless-stopped
+    environment:
+      - DEBUG=True
+      - DB_ENGINE=postgres
+      - DB_NAME=${DB_NAME:-campus_ecommerce}
+      - DB_USER=${DB_USER:-campus_ecommerce}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres_dev_password}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DEMO_USER_PASSWORD=${DEMO_USER_PASSWORD:-CampusDemo2026!}
+      - SEED_DEMO_DATA=${SEED_DEMO_DATA:-true}
+    volumes:
+      - ./backend:/app/backend
+      - media_volume:/app/backend/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: campus_ecommerce_frontend
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  media_volume:
